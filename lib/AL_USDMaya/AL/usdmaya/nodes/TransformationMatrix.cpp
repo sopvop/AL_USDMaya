@@ -1090,19 +1090,20 @@ MStatus TransformationMatrix::insertOp(
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::insertOp - %s\n", opName.GetText());
 
   // Find an iterator pointing to the location in m_orderedOps where the given
-  // maya operator should be inserted. Note that mayaOpPtr must be an entry in MayaStack
+  // maya operator should be inserted. Note that opIndex must refer to an entry in MayaStack
   // (not CommonStack, etc)
-  auto findOpInsertPos = [&](PxrUsdMayaXformStack::OpClassConstPtr mayaOpPtr)
-      -> std::vector<PxrUsdMayaXformStack::OpClassConstPtr>::iterator {
+  auto findOpInsertPos = [&](size_t opIndex)
+      -> std::vector<PxrUsdMayaXformStack::OpClassPtr>::iterator {
 
-    // First find the location of opPtr in MayaStack()...
+    assert(opIndex != PxrUsdMayaXformStack::NO_INDEX);
+
     auto& mayaStack = PxrUsdMayaXformStack::MayaStack();
-    assert(mayaOpPtr - &(*mayaStack.GetOps().cbegin()) < mayaStack.GetOps().size());
+    assert(opIndex < mayaStack.GetOps().size());
 
     // We want to iterate through m_orderedOps, finding the first one that compares equal to something
     // in the range [mayaOpIter , mayaStack.GetOps().cend() ) - so, ie, we insert before any op
     // matching our op or any of the ones after it.
-    const auto mayaStart = mayaStack.GetOps().cbegin() + (mayaOpPtr - &(*mayaStack.GetOps().cbegin()));
+    const auto mayaStart = mayaStack.GetOps().cbegin() + opIndex;
     const auto mayaEnd = mayaStack.GetOps().cend();
 
     // Iterate through m_orderedOps...
@@ -1129,12 +1130,14 @@ MStatus TransformationMatrix::insertOp(
   };
 
   auto addOp = [&](
-      PxrUsdMayaXformStack::OpClassConstPtr opClassPtr,
+      size_t opIndex,
       bool insertAtBeginning)
-      -> std::vector<PxrUsdMayaXformStack::OpClassConstPtr>::iterator {
-    assert(opClassPtr != nullptr);
+      -> std::vector<PxrUsdMayaXformStack::OpClassPtr>::iterator {
+    assert(opIndex != PxrUsdMayaXformStack::NO_INDEX);
 
-    UsdGeomXformOp op = m_xform.AddXformOp(opType, precision, opName, opClassPtr->IsInvertedTwin());
+    auto& mayaStack = PxrUsdMayaXformStack::MayaStack();
+    const PxrUsdMayaXformOpClassification& opClass = mayaStack[opIndex];
+    UsdGeomXformOp op = m_xform.AddXformOp(opType, precision, opName, opClass.IsInvertedTwin());
     if (!op)
     {
       return m_orderedOps.end();
@@ -1143,21 +1146,22 @@ MStatus TransformationMatrix::insertOp(
     // insert our op into the correct stack location
     auto posInOps = insertAtBeginning ?
         m_orderedOps.begin()
-        : findOpInsertPos(opClassPtr);
+        : findOpInsertPos(opIndex);
     auto posInXfm = insertAtBeginning ?
         m_xformops.begin()
         : m_xformops.begin() + (posInOps - m_orderedOps.begin());
+    PxrUsdMayaXformStack::OpClassPtr opClassPtr(&opClass);
     m_xformops.insert(posInXfm, op);
     m_orderedOps.insert(posInOps, opClassPtr);
     return posInOps;
   };
 
-  const PxrUsdMayaXformStack::OpClassConstPtrPair& opPair = PxrUsdMayaXformStack::MayaStack().FindOpPair(opName);
+  const PxrUsdMayaXformStack::IndexPair& opPair = PxrUsdMayaXformStack::MayaStack().FindOpIndexPair(opName);
 
   // Add the second first, so that if insertAtBeginning is true, they will
   // maintain the same order
   auto secondPos = m_orderedOps.end();
-  if (opPair.second != nullptr)
+  if (opPair.second != PxrUsdMayaXformStack::NO_INDEX)
   {
     secondPos = addOp(opPair.second, insertAtBeginning);
     if (secondPos == m_orderedOps.end())
@@ -1168,7 +1172,7 @@ MStatus TransformationMatrix::insertOp(
   auto firstPos = addOp(opPair.first, insertAtBeginning);
   if (firstPos == m_orderedOps.end())
   {
-    if (opPair.second != nullptr && secondPos != m_orderedOps.end())
+    if (opPair.second != PxrUsdMayaXformStack::NO_INDEX && secondPos != m_orderedOps.end())
     {
       // Undo the insertion of the other pair if something went wrong
       m_orderedOps.erase(secondPos);

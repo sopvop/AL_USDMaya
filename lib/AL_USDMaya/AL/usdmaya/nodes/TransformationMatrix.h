@@ -43,7 +43,7 @@ class TransformationMatrix
   UsdGeomXform m_xform;
   UsdTimeCode m_time;
   std::vector<UsdGeomXformOp> m_xformops;
-  std::vector<PxrUsdMayaXformStack::OpClassConstPtr> m_orderedOps;
+  std::vector<PxrUsdMayaXformStack::OpClassPtr> m_orderedOps;
   MObject m_transformNode;
 
   // tweak values. These are applied on top of the USD transform values to produce the final result.

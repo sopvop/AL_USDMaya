@@ -245,7 +245,7 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
 
   MTransformationMatrix::RotationOrder MrotOrder = MTransformationMatrix::kXYZ;
 
-  std::vector<PxrUsdMayaXformStack::OpClassConstPtr> orderedOps = \
+  std::vector<PxrUsdMayaXformStack::OpClassPtr> orderedOps = \
       PxrUsdMayaXformStack::FirstMatchingSubstack(
           xformops, &MrotOrder,
           PxrUsdMayaXformStack::MayaStack(),
