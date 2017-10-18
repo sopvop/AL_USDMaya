@@ -245,11 +245,13 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
 
   MTransformationMatrix::RotationOrder MrotOrder = MTransformationMatrix::kXYZ;
 
-  std::vector<PxrUsdMayaXformStack::OpClassPtr> orderedOps = \
+  PxrUsdMayaXformStack::OpClassList orderedOps = \
       PxrUsdMayaXformStack::FirstMatchingSubstack(
-          xformops, &MrotOrder,
-          PxrUsdMayaXformStack::MayaStack(),
-          PxrUsdMayaXformStack::CommonStack());
+          {
+              &PxrUsdMayaXformStack::MayaStack(),
+              &PxrUsdMayaXformStack::CommonStack()
+          },
+          xformops, &MrotOrder);
 
   if(!orderedOps.empty())
   {
@@ -257,7 +259,7 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
     for(std::vector<UsdGeomXformOp>::const_iterator it = xformops.begin(), e = xformops.end(); it != e; ++it, ++opIt)
     {
       const UsdGeomXformOp& op = *it;
-      const PxrUsdMayaXformOpClassification& opClass = **opIt;
+      const PxrUsdMayaXformOpClassification& opClass = *opIt;
       const SdfValueTypeName vtn = op.GetTypeName();
 
       UsdDataType attr_type = getAttributeType(vtn);

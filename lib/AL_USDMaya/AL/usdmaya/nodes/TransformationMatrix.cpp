@@ -780,10 +780,12 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
   MTransformationMatrix::RotationOrder MrotOrder = MTransformationMatrix::kXYZ;
 
   m_orderedOps = PxrUsdMayaXformStack::FirstMatchingSubstack(
-      m_xformops, &MrotOrder,
-      PxrUsdMayaXformStack::MayaStack(),
-      PxrUsdMayaXformStack::CommonStack(),
-      PxrUsdMayaXformStack::MatrixStack());
+      {
+        &PxrUsdMayaXformStack::MayaStack(),
+        &PxrUsdMayaXformStack::CommonStack(),
+        &PxrUsdMayaXformStack::MatrixStack()
+      },
+      m_xformops, &MrotOrder);
 
   if(!m_orderedOps.empty())
   {
@@ -792,7 +794,7 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
     auto opIt = m_orderedOps.begin();
     for(std::vector<UsdGeomXformOp>::const_iterator it = m_xformops.begin(), e = m_xformops.end(); it != e; ++it, ++opIt)
     {
-      const PxrUsdMayaXformOpClassification& opClass = **opIt;
+      const PxrUsdMayaXformOpClassification& opClass = *opIt;
       if (opClass.IsInvertedTwin()) continue;
 
       const UsdGeomXformOp& op = *it;
@@ -1018,7 +1020,7 @@ void TransformationMatrix::updateToTime(const UsdTimeCode& time)
       for(std::vector<UsdGeomXformOp>::const_iterator it = m_xformops.begin(), e = m_xformops.end(); it != e; ++it, ++opIt)
       {
         const UsdGeomXformOp& op = *it;
-        const TfToken& opName = (**opIt).GetName();
+        const TfToken& opName = (*opIt).GetName();
         if (opName == PxrUsdMayaXformStackTokens->translate)
         {
           if(hasAnimatedTranslation())
@@ -1093,7 +1095,7 @@ MStatus TransformationMatrix::insertOp(
   // maya operator should be inserted. Note that opIndex must refer to an entry in MayaStack
   // (not CommonStack, etc)
   auto findOpInsertPos = [&](size_t opIndex)
-      -> std::vector<PxrUsdMayaXformStack::OpClassPtr>::iterator {
+      -> PxrUsdMayaXformStack::OpClassList::iterator {
 
     assert(opIndex != PxrUsdMayaXformStack::NO_INDEX);
 
@@ -1118,7 +1120,7 @@ MStatus TransformationMatrix::insertOp(
         // Note that we have to compare using the PxrUsdMayaXformOpClassification::operator ==
         // We can't just rely on pointer equality, because the items in m_orderedOps may not be
         // from MayaStack - ie, they might be CommonStack
-        if (*mayaIter == **orderedIter)
+        if (*mayaIter == *orderedIter)
         {
           foundMatch = true;
           break;
@@ -1132,7 +1134,7 @@ MStatus TransformationMatrix::insertOp(
   auto addOp = [&](
       size_t opIndex,
       bool insertAtBeginning)
-      -> std::vector<PxrUsdMayaXformStack::OpClassPtr>::iterator {
+      -> PxrUsdMayaXformStack::OpClassList::iterator {
     assert(opIndex != PxrUsdMayaXformStack::NO_INDEX);
 
     auto& mayaStack = PxrUsdMayaXformStack::MayaStack();
@@ -1150,9 +1152,8 @@ MStatus TransformationMatrix::insertOp(
     auto posInXfm = insertAtBeginning ?
         m_xformops.begin()
         : m_xformops.begin() + (posInOps - m_orderedOps.begin());
-    PxrUsdMayaXformStack::OpClassPtr opClassPtr(&opClass);
     m_xformops.insert(posInXfm, op);
-    m_orderedOps.insert(posInOps, opClassPtr);
+    m_orderedOps.insert(posInOps, opClass);
     return posInOps;
   };
 
@@ -1730,7 +1731,7 @@ void TransformationMatrix::pushToPrim()
   auto opIt = m_orderedOps.begin();
   for(std::vector<UsdGeomXformOp>::iterator it = m_xformops.begin(), e = m_xformops.end(); it != e; ++it, ++opIt)
   {
-    const PxrUsdMayaXformOpClassification& opClass = **opIt;
+    const PxrUsdMayaXformOpClassification& opClass = *opIt;
     if (opClass.IsInvertedTwin()) continue;
 
     UsdGeomXformOp& op = *it;
@@ -1913,7 +1914,7 @@ void TransformationMatrix::enableReadAnimatedValues(bool enabled)
     {
       for(size_t i = 0, n = m_orderedOps.size(); i < n; ++i)
       {
-        if(m_orderedOps[i]->GetName() == PxrUsdMayaXformStackTokens->transform)
+        if(m_orderedOps[i].GetName() == PxrUsdMayaXformStackTokens->transform)
         {
           MMatrix m = MPxTransformationMatrix::asMatrix();
           m_xformops[i].Set(*(const GfMatrix4d*)&m, getTimeCode());
@@ -1979,7 +1980,7 @@ void TransformationMatrix::enablePushToPrim(bool enabled)
     {
       for(size_t i = 0, n = m_orderedOps.size(); i < n; ++i)
       {
-        if(m_orderedOps[i]->GetName() == PxrUsdMayaXformStackTokens->transform)
+        if(m_orderedOps[i].GetName() == PxrUsdMayaXformStackTokens->transform)
         {
           MMatrix m = MPxTransformationMatrix::asMatrix();
           m_xformops[i].Set(*(const GfMatrix4d*)&m, getTimeCode());
