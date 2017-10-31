@@ -243,15 +243,13 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
   bool resetsXformStack = false;
   std::vector<UsdGeomXformOp> xformops = xformSchema.GetOrderedXformOps(&resetsXformStack);
 
-  MTransformationMatrix::RotationOrder MrotOrder = MTransformationMatrix::kXYZ;
-
   PxrUsdMayaXformStack::OpClassList orderedOps = \
       PxrUsdMayaXformStack::FirstMatchingSubstack(
           {
               &PxrUsdMayaXformStack::MayaStack(),
               &PxrUsdMayaXformStack::CommonStack()
           },
-          xformops, &MrotOrder);
+          xformops);
 
   if(!orderedOps.empty())
   {
@@ -286,7 +284,7 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
             {
               // Set the rotate order
               MFnTransform trans(to);
-              AL_MAYA_CHECK_ERROR2(trans.setRotationOrder(MrotOrder, /*no need to reorder*/ false), xformError);
+              AL_MAYA_CHECK_ERROR2(setInt32(to, m_rotateOrder, uint32_t(convertRotationOrder(op.GetOpType()))), xformError);
             }
 
             if (attr_type == UsdDataType::kVec3f)

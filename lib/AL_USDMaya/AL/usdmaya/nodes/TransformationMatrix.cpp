@@ -777,15 +777,13 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
   if(!resetsXformStack)
     m_flags |= kInheritsTransform;
 
-  MTransformationMatrix::RotationOrder MrotOrder = MTransformationMatrix::kXYZ;
-
   m_orderedOps = PxrUsdMayaXformStack::FirstMatchingSubstack(
       {
         &PxrUsdMayaXformStack::MayaStack(),
         &PxrUsdMayaXformStack::CommonStack(),
         &PxrUsdMayaXformStack::MatrixStack()
       },
-      m_xformops, &MrotOrder);
+      m_xformops);
 
   if(!m_orderedOps.empty())
   {
