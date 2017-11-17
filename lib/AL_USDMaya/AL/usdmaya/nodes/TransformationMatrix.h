@@ -44,6 +44,7 @@ class TransformationMatrix
   UsdTimeCode m_time;
   std::vector<UsdGeomXformOp> m_xformops;
   PxrUsdMayaXformStack::OpClassList m_orderedOps;
+  std::vector<size_t> m_orderedOpMayaIndices;
   MObject m_transformNode;
 
   // tweak values. These are applied on top of the USD transform values to produce the final result.
@@ -91,9 +92,12 @@ class TransformationMatrix
     kAnimatedMatrix = 1 << 3,
     kAnimatedShear = 1 << 4,
 
-    // are the transform ops coming from a matrix, the PXR schema, or from the maya schema (no flags set)
+    // are the transform ops coming from a matrix, the maya schema, the common schema,
+    // or none of the above (no flags set)?
     kFromMatrix = 1 << 8,
     kFromMayaSchema = 1 << 9,
+    kFromCommonSchema = 1 << 10,
+    kAnyKnownSchema = kFromMatrix | kFromMayaSchema | kFromCommonSchema,
 
     // which transform components are present in the prim?
     kPrimHasScale = 1 << 16,
@@ -408,6 +412,11 @@ public:
   void pushToPrim();
 
 private:
+  /// Used to populate m_orderedOpMayaIndices when it is actually needed
+  /// (since many / most xforms will never be altered, would be waste to
+  /// do this for all xforms)
+  void buildOrderedOpMayaIndices();
+
   // Used by various insert*Op methods
   MStatus insertOp(
       UsdGeomXformOp::Type opType,
