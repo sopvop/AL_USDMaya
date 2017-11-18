@@ -159,6 +159,51 @@ void TransformationMatrix::setPrim(const UsdPrim& prim)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+const PxrUsdMayaXformStack&
+TransformationMatrix::MayaSinglePivotStack()
+{
+    static PxrUsdMayaXformStack mayaSinglePivotStack(
+            // ops
+            {
+                PxrUsdMayaXformOpClassification(
+                        PxrUsdMayaXformStackTokens->translate,
+                        UsdGeomXformOp::TypeTranslate),
+                PxrUsdMayaXformOpClassification(
+                        PxrUsdMayaXformStackTokens->rotatePivotTranslate,
+                        UsdGeomXformOp::TypeTranslate),
+                PxrUsdMayaXformOpClassification(
+                        PxrUsdMayaXformStackTokens->pivot,
+                        UsdGeomXformOp::TypeTranslate),
+                PxrUsdMayaXformOpClassification(
+                        PxrUsdMayaXformStackTokens->rotate,
+                        UsdGeomXformOp::TypeRotateXYZ),
+                PxrUsdMayaXformOpClassification(
+                        PxrUsdMayaXformStackTokens->rotateAxis,
+                        UsdGeomXformOp::TypeRotateXYZ),
+                PxrUsdMayaXformOpClassification(
+                        PxrUsdMayaXformStackTokens->scalePivotTranslate,
+                        UsdGeomXformOp::TypeTranslate),
+                PxrUsdMayaXformOpClassification(
+                        PxrUsdMayaXformStackTokens->shear,
+                        UsdGeomXformOp::TypeTransform),
+                PxrUsdMayaXformOpClassification(
+                        PxrUsdMayaXformStackTokens->scale,
+                        UsdGeomXformOp::TypeScale),
+                PxrUsdMayaXformOpClassification(
+                        PxrUsdMayaXformStackTokens->pivot,
+                        UsdGeomXformOp::TypeTranslate,
+                        true /* isInvertedTwin */)
+            },
+
+            // inversionTwins
+            {
+                {2, 8},
+            });
+
+    return mayaSinglePivotStack;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 bool TransformationMatrix::readVector(MVector& result, const UsdGeomXformOp& op, UsdTimeCode timeCode)
 {
   const SdfValueTypeName vtn = op.GetTypeName();
@@ -788,7 +833,7 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
   {
     static const std::pair<const PxrUsdMayaXformStack&, uint32_t> stackFlagPairs[3] = {
         {PxrUsdMayaXformStack::MayaStack(), kFromMayaSchema},
-        {PxrUsdMayaXformStack::CommonStack(), kFromCommonSchema},
+        {MayaSinglePivotStack(), kSinglePivotSchema},
         {PxrUsdMayaXformStack::MatrixStack(), kFromMatrix},
     };
     for (const auto& stackFlagPair : stackFlagPairs)
@@ -1111,7 +1156,7 @@ void TransformationMatrix::buildOrderedOpMayaIndices()
         m_orderedOpMayaIndices.push_back(mayaStack.FindOpIndex(op.GetName(), op.IsInvertedTwin()));
       }
     }
-    else if (m_flags & kFromMayaSchema)
+    else if (m_flags & kSinglePivotSchema)
     {
       const auto& mayaStack = PxrUsdMayaXformStack::MayaStack();
       m_orderedOpMayaIndices.reserve(m_orderedOps.size());
@@ -1140,6 +1185,86 @@ void TransformationMatrix::buildOrderedOpMayaIndices()
     }
   }
 }
+
+bool TransformationMatrix::splitPivotIfNeeded()
+{
+  // If we don't even have a singular pivot, then we definitely
+  // don't need to split our pivot, and a "normal" insert
+  // rotatePivot/scalePivot should proceed
+  if (!primHasPivot())
+  {
+    return false;
+  }
+
+  // If have a pivot anymore, but they're the same, we don't need to split...
+  // however, a "normal" insert rotatePivot/scalePivot should NOT proceed,
+  // because we can keep using our singular pivot for now.
+  if (MPxTransformationMatrix::scalePivotValue == MPxTransformationMatrix::rotatePivotValue)
+  {
+    return true;
+  }
+
+  // Otherwise, we will need to split out the pivot... we do this by first REMOVING
+  // our singular pivot op...
+  AL_MAYA_CHECK_ERROR_RETURN_VAL(
+      removeOp(PxrUsdMayaXformStackTokens->pivot, kPrimHasPivot),
+      true, "Error removing singular pivot op");
+
+  // ...then we just call the "normal" insertRotatePivotOp and insertScalePivotOp
+  // Note that these will in turn call this function, but that's fine, because
+  // we've already removed the pivot op, so the first check at the top will cause
+  // an early exit.
+  AL_MAYA_CHECK_ERROR_RETURN_VAL(
+      insertRotatePivotOp(),
+      true, "Error inserting rotatePivot op (after removing singular pivot)");
+  AL_MAYA_CHECK_ERROR_RETURN_VAL(
+      insertScalePivotOp(),
+      true, "Error inserting scalePivot op (after removing singular pivot)");
+
+  // If everything went well, return true, to indicate the caller should not
+  // proceed with inserting a rotatePivot or scalePivot (because we've already done it!)
+  return true;
+
+}
+
+MStatus TransformationMatrix::removeOp(
+    const TfToken& opName,
+    Flags oldFlag)
+{
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::removeOp - %s\n", opName.GetText());
+
+  // We need to find which op(s) to remove; note that we can't
+  // rely on m_orderedOpMayaIndices to speed up where to find our op,
+  // because the op we're removing may not be an op from the MayaStack... so
+  // we just iterate through m_orderedOps. This should be ok, since m_orderedOps
+  // is never that big, and we likely won't be removing ops that often...
+  bool foundOne;
+  // Iterate backwards, so the indices will remain valid even if we remove an item...
+  for (size_t i = m_orderedOps.size() - 1; i >= 0; --i)
+  {
+    if (opName == m_orderedOps[i].GetName())
+    {
+      m_orderedOps.erase(m_orderedOps.begin() + i);
+      m_xformops.erase(m_xformops.begin() + i);
+      if (!m_orderedOpMayaIndices.empty())
+      {
+        m_orderedOpMayaIndices.erase(m_orderedOpMayaIndices.begin() + i);
+      }
+      // If this is the second op we've found, we can abort, since a stack should never
+      // have more than two w/ the same name...
+      if (foundOne) break;
+      foundOne = true;
+    }
+  }
+  m_flags &= ~oldFlag;
+  if (!foundOne)
+  {
+    return MStatus::kFailure;
+  }
+  m_xform.SetXformOpOrder(m_xformops, (m_flags & kInheritsTransform) == 0);
+  return MStatus::kSuccess;
+}
+
 
 MStatus TransformationMatrix::insertOp(
     UsdGeomXformOp::Type opType,
@@ -1422,6 +1547,10 @@ MStatus TransformationMatrix::shearBy(const MVector& shear, MSpace::Space space)
 //----------------------------------------------------------------------------------------------------------------------
 MStatus TransformationMatrix::insertScalePivotOp()
 {
+  if (splitPivotIfNeeded())
+  {
+    return MStatus::kSuccess;
+  }
   return insertOp(UsdGeomXformOp::TypeTranslate, UsdGeomXformOp::PrecisionFloat,
       PxrUsdMayaXformStackTokens->scalePivot, kPrimHasScalePivot);
 }
@@ -1485,6 +1614,10 @@ MStatus TransformationMatrix::setScalePivotTranslation(const MVector& sp, MSpace
 //----------------------------------------------------------------------------------------------------------------------
 MStatus TransformationMatrix::insertRotatePivotOp()
 {
+  if (splitPivotIfNeeded())
+  {
+    return MStatus::kSuccess;
+  }
   return insertOp(UsdGeomXformOp::TypeTranslate, UsdGeomXformOp::PrecisionFloat,
       PxrUsdMayaXformStackTokens->rotatePivot, kPrimHasRotatePivot);
 }
