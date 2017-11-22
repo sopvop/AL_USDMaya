@@ -1204,6 +1204,7 @@ bool TransformationMatrix::splitPivotIfNeeded()
     return true;
   }
 
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::splitPivotIfNeeded - splitting pivot\n");
   // Otherwise, we will need to split out the pivot... we do this by first REMOVING
   // our singular pivot op...
   AL_MAYA_CHECK_ERROR_RETURN_VAL(
@@ -1238,7 +1239,7 @@ MStatus TransformationMatrix::removeOp(
   // because the op we're removing may not be an op from the MayaStack... so
   // we just iterate through m_orderedOps. This should be ok, since m_orderedOps
   // is never that big, and we likely won't be removing ops that often...
-  bool foundOne;
+  bool foundOne = false;
   // Iterate backwards, so the indices will remain valid even if we remove an item...
   for (size_t i = m_orderedOps.size() - 1; i >= 0; --i)
   {
