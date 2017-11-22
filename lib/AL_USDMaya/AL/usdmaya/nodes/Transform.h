@@ -126,6 +126,8 @@ public:
   MPxNode::SchedulingType schedulingType() const override
     { return kParallel; }
 
+  void setPrim(const UsdPrim& prim);
+
 private:
 
   //--------------------------------------------------------------------------------------------------------------------
