@@ -13,8 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/maya/CodeTimings.h"
-#include "AL/usdmaya/Utils.h"
+#include "AL/usdmaya/CodeTimings.h"
 #include "AL/usdmaya/Metadata.h"
 #include "AL/usdmaya/StageData.h"
 #include "AL/usdmaya/DebugCodes.h"
@@ -50,6 +49,7 @@
 
 #include <map>
 #include <string>
+#include "AL/usdmaya/utils/Utils.h"
 
 namespace AL {
 namespace usdmaya {
@@ -387,7 +387,7 @@ MStatus ProxyShapePostLoadProcess::initialise(nodes::ProxyShape* ptrNode)
   // iterate over the stage and find all custom schema nodes that have registered translator plugins
   std::vector<UsdPrim> schemaPrims;
   std::vector<ImportCallback> callBacks;
-  UsdStageRefPtr stage = ptrNode->getUsdStage();
+  UsdStageRefPtr stage = ptrNode->usdStage();
   if(stage)
   {
     huntForNativeNodes(proxyTransformPath, schemaPrims, callBacks, stage, ptrNode->translatorManufacture());

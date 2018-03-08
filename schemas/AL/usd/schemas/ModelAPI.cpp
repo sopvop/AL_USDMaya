@@ -126,8 +126,55 @@ void AL_usd_ModelAPI::SetSelectability(const TfToken& selectability)
   }
 }
 
-TfToken AL_usd_ModelAPI::GetSelectabilityValue() const
+TfToken AL_usd_ModelAPI::ComputeHierarchical(const UsdPrim& prim,
+                                             const ComputeLogic& logic) const
 {
+  TfToken value;
+  bool keepLooking = logic(prim, value);
+
+  if(keepLooking)
+  {
+    if (UsdPrim parent = prim.GetParent())
+    {
+      return ComputeHierarchical(parent, logic);
+    }
+  }
+
+  return value;
+}
+
+TfToken AL_usd_ModelAPI::ComputeSelectabilty() const
+{
+  if (!GetPrim().IsValid())
+  {
+    return TfToken();
+  }
+
+  ComputeLogic determineSelectability = [](const UsdPrim& prim, TfToken & outValue)
+  {
+    AL_usd_ModelAPI modelApi(prim);
+    if (modelApi.GetSelectability() == AL_USDMayaSchemasTokens->selectability_unselectable)
+    {
+      outValue = AL_USDMayaSchemasTokens->selectability_unselectable;
+      return false;
+    }
+
+    outValue = AL_USDMayaSchemasTokens->selectability_inherited;
+    return true;
+  };
+
+  TfToken foundValue = ComputeHierarchical(GetPrim(), determineSelectability);
+
+  return foundValue;
+}
+
+TfToken AL_usd_ModelAPI::GetSelectability() const
+{
+  if (!GetPrim().IsValid())
+  {
+    return TfToken();
+  }
+
   if(!GetPrim().HasMetadata(AL_USDMayaSchemasTokens->selectability))
   {
     return AL_USDMayaSchemasTokens->selectability_inherited;
@@ -170,33 +217,27 @@ TfToken AL_usd_ModelAPI::GetLock() const
   return lockValue;
 }
 
-static TfToken _ComputeLock(const UsdPrim& prim)
-{
-  TfToken localLock;
-  if (!prim.HasMetadata(AL_USDMayaSchemasTokens->lock))
-  {
-    localLock = AL_USDMayaSchemasTokens->lock_inherited;
-  }
-  else
-  {
-    prim.GetMetadata<TfToken>(AL_USDMayaSchemasTokens->lock, &localLock);
-  }
-  if (localLock != AL_USDMayaSchemasTokens->lock_inherited)
-  {
-    return localLock;
-  }
-  if (UsdPrim parent = prim.GetParent())
-  {
-    return _ComputeLock(parent);
-  }
-  return AL_USDMayaSchemasTokens->lock_inherited;
-}
-
 TfToken AL_usd_ModelAPI::ComputeLock() const
 {
   if (!GetPrim())
     return TfToken();
-  return _ComputeLock(GetPrim());
+  ComputeLogic determineLock = [](const UsdPrim& prim, TfToken& outValue)
+  {
+    if (!prim.HasMetadata(AL_USDMayaSchemasTokens->lock))
+    {
+      outValue = AL_USDMayaSchemasTokens->lock_inherited;
+      return true;
+    }
+    prim.GetMetadata<TfToken>(AL_USDMayaSchemasTokens->lock, &outValue);
+    if (outValue != AL_USDMayaSchemasTokens->lock_inherited)
+    {
+      return false;
+    }
+    return true;
+  };
+
+  TfToken foundValue = ComputeHierarchical(GetPrim(), determineLock);
+  return foundValue;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

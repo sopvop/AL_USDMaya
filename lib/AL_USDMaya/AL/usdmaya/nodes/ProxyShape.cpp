@@ -20,14 +20,16 @@
   #include "pxr/usdImaging/usdImaging/hdEngine.h"
 #endif
 
-#include "AL/maya/CodeTimings.h"
+#include "AL/usdmaya/CodeTimings.h"
+#include "AL/usdmaya/utils/Utils.h"
 
 #include "AL/usdmaya/DebugCodes.h"
+#include "AL/usdmaya/Global.h"
 #include "AL/usdmaya/Metadata.h"
 #include "AL/usdmaya/StageCache.h"
 #include "AL/usdmaya/StageData.h"
 #include "AL/usdmaya/TypeIDs.h"
-#include "AL/usdmaya/Utils.h"
+
 #include "AL/usdmaya/cmds/ProxyShapePostLoadProcess.h"
 #include "AL/usdmaya/fileio/SchemaPrims.h"
 #include "AL/usdmaya/fileio/TransformIterator.h"
@@ -45,6 +47,7 @@
 #include "maya/MItDependencyNodes.h"
 #include "maya/MPlugArray.h"
 #include "maya/MNodeClass.h"
+#include "maya/MCommandResult.h"
 
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/tf/fileUtils.h"
@@ -57,19 +60,28 @@
 namespace AL {
 namespace usdmaya {
 namespace nodes {
+typedef void (*proxy_function_prototype)(void* userData, AL::usdmaya::nodes::ProxyShape* proxyInstance);
 
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::serialiseTranslatorContext()
 {
+  triggerEvent("PreSerialiseContext");
+
   serializedTrCtxPlug().setValue(context()->serialise());
+
+  triggerEvent("PostSerialiseContext");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::deserialiseTranslatorContext()
 {
+  triggerEvent("PreDeserialiseContext");
+
   MString value;
   serializedTrCtxPlug().getValue(value);
   context()->deserialise(value);
+
+  triggerEvent("PostDeserialiseContext");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -81,7 +93,7 @@ static std::string resolvePath(const std::string& filePath)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
- AL_MAYA_DEFINE_NODE(ProxyShape, AL_USDMAYA_PROXYSHAPE, AL_usdmaya);
+AL_MAYA_DEFINE_NODE(ProxyShape, AL_USDMAYA_PROXYSHAPE, AL_usdmaya);
 
 MObject ProxyShape::m_filePath = MObject::kNullObj;
 MObject ProxyShape::m_primPath = MObject::kNullObj;
@@ -114,9 +126,8 @@ MObject ProxyShape::m_transformRotate = MObject::kNullObj;
 MObject ProxyShape::m_transformScale = MObject::kNullObj;
 MObject ProxyShape::m_stageDataDirty = MObject::kNullObj;
 
-std::vector<MObjectHandle> ProxyShape::m_unloadedProxyShapes;
-
 //----------------------------------------------------------------------------------------------------------------------
+std::vector<MObjectHandle> ProxyShape::m_unloadedProxyShapes;
 
 //----------------------------------------------------------------------------------------------------------------------
 UsdPrim ProxyShape::getUsdPrim(MDataBlock& dataBlock) const
@@ -145,6 +156,7 @@ SdfPathVector ProxyShape::getExcludePrimPaths() const
   return getPrimPathsFromCommaJoinedString(paths);
 }
 
+//----------------------------------------------------------------------------------------------------------------------
 UsdStagePopulationMask ProxyShape::constructStagePopulationMask(const MString &paths) const
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::constructStagePopulationMask(%s)\n", paths.asChar());
@@ -163,6 +175,8 @@ UsdStagePopulationMask ProxyShape::constructStagePopulationMask(const MString &p
   }
   return mask;
 }
+
+//----------------------------------------------------------------------------------------------------------------------
 SdfPathVector ProxyShape::getPrimPathsFromCommaJoinedString(const MString &paths) const
 {
   SdfPathVector result;
@@ -181,6 +195,7 @@ SdfPathVector ProxyShape::getPrimPathsFromCommaJoinedString(const MString &paths
   }
   return result;
 }
+
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::constructGLImagingEngine()
 {
@@ -189,9 +204,13 @@ void ProxyShape::constructGLImagingEngine()
   {
     if(m_stage)
     {
+      // function prototype of callback we wish to register
+      typedef void (*proxy_function_prototype)(void*, AL::usdmaya::nodes::ProxyShape*);
+
       // delete previous instance
       if(m_engine)
       {
+        triggerEvent("DestroyGLEngine");
         m_engine->InvalidateBuffers();
         delete m_engine;
       }
@@ -203,10 +222,11 @@ void ProxyShape::constructGLImagingEngine()
       excludedGeometryPaths.insert(excludedGeometryPaths.end(), m_excludedGeometry.begin(), m_excludedGeometry.end());
 
       m_engine = new UsdImagingGLHdEngine(m_path, excludedGeometryPaths);
+
+      triggerEvent("ConstructGLEngine");
     }
   }
 }
-
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus ProxyShape::setDependentsDirty(const MPlug& plugBeingDirtied, MPlugArray& plugs)
@@ -311,7 +331,7 @@ bool ProxyShape::getRenderAttris(void* pattribs, const MHWRender::MFrameContext&
 
 //----------------------------------------------------------------------------------------------------------------------
 ProxyShape::ProxyShape()
-  : MPxSurfaceShape(), maya::NodeHelper(),
+  : MPxSurfaceShape(), AL::maya::utils::NodeHelper(), AL::event::NodeEvents(&AL::event::EventScheduler::getScheduler()),
     m_context(fileio::translators::TranslatorContext::create(this)),
     m_translatorManufacture(context())
 {
@@ -324,6 +344,7 @@ ProxyShape::ProxyShape()
   m_objectsChangedNoticeKey = TfNotice::Register(me, &ProxyShape::onObjectsChanged, m_stage);
   m_editTargetChanged = TfNotice::Register(me, &ProxyShape::onEditTargetChanged, m_stage);
 
+  registerEvents();
 
   m_findExcludedPrims.preIteration = [this]() {
     m_excludedTaggedGeometry.clear();
@@ -427,11 +448,13 @@ ProxyShape::~ProxyShape()
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::~ProxyShape\n");
   MNodeMessage::removeCallback(m_attributeChanged);
   MEventMessage::removeCallback(m_onSelectionChanged);
+  removeAttributeChangedCallback();
   TfNotice::Revoke(m_variantChangedNoticeKey);
   TfNotice::Revoke(m_objectsChangedNoticeKey);
   TfNotice::Revoke(m_editTargetChanged);
   if(m_engine)
   {
+    triggerEvent("DestroyGLEngine");
     m_engine->InvalidateBuffers();
     delete m_engine;
   }
@@ -587,6 +610,7 @@ void ProxyShape::trackEditTargetLayer(LayerManager* layerManager)
     }
     layerManager->addLayer(prevTargetLayer);
   }
+  triggerEvent("EditTargetChanged");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -696,7 +720,7 @@ void ProxyShape::serialize(UsdStageRefPtr stage, LayerManager* layerManager)
       auto sessionLayer = stage->GetSessionLayer();
       layerManager->addLayer(sessionLayer);
       // ...and store the name for the (anonymous) session layer so we can find it!
-      sessionLayerNamePlug().setValue(convert(sessionLayer->GetIdentifier()));
+      sessionLayerNamePlug().setValue(AL::maya::utils::convert(sessionLayer->GetIdentifier()));
 
       // Then add in the current edit target
       trackEditTargetLayer(layerManager);
@@ -777,6 +801,7 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
       return;
 
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("ProxyShape::onObjectsChanged called m_compositionHasChanged=%i\n", m_compositionHasChanged);
+
   // These paths are subtree-roots representing entire subtrees that may have
   // changed. In this case, we must dump all cached data below these points
   // and repopulate those trees.
@@ -790,12 +815,12 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
 
     std::stringstream strstr;
     strstr << "Breakdown for Variant Switch:\n";
-    maya::Profiler::printReport(strstr);
+    AL::usdmaya::Profiler::printReport(strstr);
   }
 
   SdfPathVector newUnselectables;
   SdfPathVector removeUnselectables;
-  auto recordSelectablePrims = [&newUnselectables, &removeUnselectables, this] (const SdfPath& objectPath, const UsdPrim& prim){
+  auto recordSelectablePrims = [&newUnselectables, &removeUnselectables, this](const UsdPrim& prim){
     if(!prim.IsValid())
     {
       return;
@@ -819,7 +844,7 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
   SdfPathSet lockTransformPrims;
   SdfPathSet lockInheritedPrims;
   SdfPathSet unlockedPrims;
-  auto recordPrimsLockStatus = [&lockTransformPrims, &lockInheritedPrims, &unlockedPrims] (const SdfPath& objectPath, const UsdPrim& prim) {
+  auto recordPrimsLockStatus = [&lockTransformPrims, &lockInheritedPrims, &unlockedPrims](const UsdPrim& prim) {
     if (!prim.IsValid())
     {
       return;
@@ -829,20 +854,20 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
     {
       if (lockPropertyValue == Metadata::lockTransform)
       {
-        lockTransformPrims.insert(objectPath);
+        lockTransformPrims.insert(prim.GetPath());
       }
       else if (lockPropertyValue == Metadata::lockInherited)
       {
-        lockInheritedPrims.insert(objectPath);
+        lockInheritedPrims.insert(prim.GetPath());
       }
       else if (lockPropertyValue == Metadata::lockUnlocked)
       {
-        unlockedPrims.insert(objectPath);
+        unlockedPrims.insert(prim.GetPath());
       }
     }
     else
     {
-      lockInheritedPrims.insert(objectPath);
+      lockInheritedPrims.insert(prim.GetPath());
     }
   };
 
@@ -850,8 +875,8 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
   for(const SdfPath& path : resyncedPaths)
   {
     UsdPrim newPrim = m_stage->GetPrimAtPath(path);
-    recordSelectablePrims(path, newPrim);
-    recordPrimsLockStatus(path, newPrim);
+    recordSelectablePrims(newPrim);
+    recordPrimsLockStatus(newPrim);
   }
 
   const SdfPathVector& changedInfoOnlyPaths = notice.GetChangedInfoOnlyPaths();
@@ -866,8 +891,8 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
     {
       changedPrim = m_stage->GetPrimAtPath(path);
     }
-    recordSelectablePrims(path, changedPrim);
-    recordPrimsLockStatus(path, changedPrim);
+    recordSelectablePrims(changedPrim);
+    recordPrimsLockStatus(changedPrim);
   }
 
   if(!removeUnselectables.empty())
@@ -987,6 +1012,8 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
         if (it->first == SdfFieldKeys->VariantSelection ||
             it->first == SdfFieldKeys->Active)
         {
+          triggerEvent("PreVariantChangedCB");
+
           TF_DEBUG(ALUSDMAYA_EVENTS).Msg("ProxyShape::variantSelectionListener oldPath=%s, oldIdentifier=%s, path=%s, layer=%s\n",
                                          entry.oldPath.GetString().c_str(),
                                          entry.oldIdentifier.c_str(),
@@ -999,6 +1026,8 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
           }
           m_compositionHasChanged = true;
           onPrePrimChanged(path, m_variantSwitchedPrims);
+
+          triggerEvent("PostVariantChangedCB");
         }
       }
     }
@@ -1065,7 +1094,7 @@ void ProxyShape::loadStage()
             auto layerManager = LayerManager::findManager();
             if(layerManager)
             {
-              sessionLayer = layerManager->findLayer(convert(sessionLayerName));
+              sessionLayer = layerManager->findLayer(AL::maya::utils::convert(sessionLayerName));
               if(!sessionLayer)
               {
                 MGlobal::displayError(MString("ProxyShape \"") + name() + "\" had a serialized session layer"
@@ -1087,7 +1116,7 @@ void ProxyShape::loadStage()
             if(serializedSessionLayer.length() != 0)
             {
               sessionLayer = SdfLayer::CreateAnonymous();
-              sessionLayer->ImportFromString(convert(serializedSessionLayer));
+              sessionLayer->ImportFromString(AL::maya::utils::convert(serializedSessionLayer));
             }
           }
         }
@@ -1152,7 +1181,7 @@ void ProxyShape::loadStage()
   MString primPathStr = inputStringValue(dataBlock, m_primPath);
   if (primPathStr.length())
   {
-    m_path = SdfPath(convert(primPathStr));
+    m_path = SdfPath(AL::maya::utils::convert(primPathStr));
     UsdPrim prim = m_stage->GetPrimAtPath(m_path);
     if(!prim)
     {
@@ -1180,8 +1209,8 @@ void ProxyShape::loadStage()
   {
     std::stringstream strstr;
     strstr << "Breakdown for file: " << file << std::endl;
-    maya::Profiler::printReport(strstr);
-    MGlobal::displayInfo(convert(strstr.str()));
+    AL::usdmaya::Profiler::printReport(strstr);
+    MGlobal::displayInfo(AL::maya::utils::convert(strstr.str()));
   }
 
   stageDataDirtyPlug().setValue(true);
@@ -1226,12 +1255,21 @@ void ProxyShape::constructExcludedPrims()
 //----------------------------------------------------------------------------------------------------------------------
 bool ProxyShape::lockTransformAttribute(const SdfPath& path, const bool lock)
 {
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::lockTransformAttribute\n");
+
   UsdPrim prim = m_stage->GetPrimAtPath(path);
+  if(!prim.IsValid())
+  {
+    TF_DEBUG_MSG(ALUSDMAYA_EVALUATION,"ProxyShape::lockTransformAttribute prim path not valid '%s'\n", prim.GetPath().GetString().c_str());
+    return false;
+  }
+
+
   VtValue mayaPath = prim.GetCustomDataByKey(TfToken("MayaPath"));
   MObject lockObject;
   if (!mayaPath.IsEmpty())
   {
-    MString pathStr = convert(mayaPath.Get<std::string>());
+    MString pathStr = AL::maya::utils::convert(mayaPath.Get<std::string>());
     MSelectionList sl;
     MObject selObj;
     if (sl.add(pathStr) == MStatus::kSuccess)
@@ -1256,21 +1294,31 @@ bool ProxyShape::lockTransformAttribute(const SdfPath& path, const bool lock)
       }
     }
   }
+
   if (lockObject.isNull())
     return false;
-  MPlug(lockObject, m_transformTranslate).setLocked(lock);
-  MPlug(lockObject, m_transformRotate).setLocked(lock);
-  MPlug(lockObject, m_transformScale).setLocked(lock);
+
+
+  MPlug t(lockObject, m_transformTranslate);
+  MPlug r(lockObject, m_transformRotate);
+  MPlug s(lockObject, m_transformScale);
+
+  t.setLocked(lock);
+  r.setLocked(lock);
+  s.setLocked(lock);
+
   if (lock && MFnDependencyNode(lockObject).typeId() == AL_USDMAYA_TRANSFORM)
   {
     MPlug(lockObject, Transform::pushToPrim()).setBool(false);
   }
+  TF_DEBUG_MSG(ALUSDMAYA_EVALUATION,"ProxyShape::lockTransformAttribute Setting lock for '%s'\n", prim.GetPath().GetString().c_str());
   return true;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::constructLockPrims()
 {
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::constructLockPrims\n");
   SdfPathSet primsNeedLock = m_lockTransformPrims;
 
   // add inherited lock prims if their parents are already in.
@@ -1315,6 +1363,8 @@ void ProxyShape::constructLockPrims()
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::onAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug&, void* clientData)
 {
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::onAttributeChanged\n");
+
   const SdfPath rootPath(std::string("/"));
   ProxyShape* proxy = (ProxyShape*)clientData;
   if(msg & MNodeMessage::kAttributeSet)
@@ -1341,7 +1391,7 @@ void ProxyShape::onAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug& p
         MString primPathStr = plug.asString();
         if (primPathStr.length())
         {
-          proxy->m_path = SdfPath(convert(primPathStr));
+          proxy->m_path = SdfPath(AL::maya::utils::convert(primPathStr));
           UsdPrim prim = proxy->m_stage->GetPrimAtPath(proxy->m_path);
           if(!prim)
           {
@@ -1367,12 +1417,33 @@ void ProxyShape::onAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug& p
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::removeAttributeChangedCallback()
+{
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::removeAttributeChangedCallback\n");
+  if(m_attributeChanged != -1)
+  {
+    MMessage::removeCallback(m_attributeChanged);
+    m_attributeChanged = -1;
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::addAttributeChangedCallback()
+{
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::addAttributeChangedCallback\n");
+  if(m_attributeChanged == -1)
+  {
+    MObject obj = thisMObject();
+    m_attributeChanged = MNodeMessage::addAttributeChangedCallback(obj, onAttributeChanged, (void*)this);
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::postConstructor()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::postConstructor\n");
   setRenderable(true);
-  MObject obj = thisMObject();
-  m_attributeChanged = MNodeMessage::addAttributeChangedCallback(obj, onAttributeChanged, (void*)this);
+  addAttributeChangedCallback();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1729,6 +1800,8 @@ MStatus ProxyShape::computeDrivenAttributes(const MPlug& plug, MDataBlock& dataB
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::serialiseTransformRefs()
 {
+  triggerEvent("PreSerialiseTransformRefs");
+
   std::ostringstream oss;
   for(auto iter : m_requiredPaths)
   {
@@ -1742,11 +1815,15 @@ void ProxyShape::serialiseTransformRefs()
         << uint32_t(iter.second.refCount()) << ";";
   }
   serializedRefCountsPlug().setString(oss.str().c_str());
+
+  triggerEvent("PostSerialiseTransformRefs");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::deserialiseTransformRefs()
 {
+  triggerEvent("PreDeserialiseTransformRefs");
+
   MString str = serializedRefCountsPlug().asString();
   MStringArray strs;
   str.split(';', strs);
@@ -1789,6 +1866,8 @@ void ProxyShape::deserialiseTransformRefs()
   }
 
   serializedRefCountsPlug().setString("");
+
+  triggerEvent("PostDeserialiseTransformRefs");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1814,6 +1893,28 @@ void ProxyShape::cleanupTransformRefs()
       ++it;
     }
   }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::registerEvents()
+{
+  registerEvent("PreStageLoaded", AL::event::kUSDMayaEventType);
+  registerEvent("PostStageLoaded", AL::event::kUSDMayaEventType);
+  registerEvent("ConstructGLEngine", AL::event::kUSDMayaEventType);
+  registerEvent("DestroyGLEngine", AL::event::kUSDMayaEventType);
+  registerEvent("PreSelectionChanged", AL::event::kUSDMayaEventType);
+  registerEvent("PostSelectionChanged", AL::event::kUSDMayaEventType);
+  registerEvent("PreVariantChanged", AL::event::kUSDMayaEventType);
+  registerEvent("PostVariantChanged", AL::event::kUSDMayaEventType);
+  registerEvent("PreSerialiseContext", AL::event::kUSDMayaEventType, Global::postSave());
+  registerEvent("PostSerialiseContext", AL::event::kUSDMayaEventType, Global::postSave());
+  registerEvent("PreDeserialiseContext", AL::event::kUSDMayaEventType, Global::postRead());
+  registerEvent("PostDeserialiseContext", AL::event::kUSDMayaEventType, Global::postRead());
+  registerEvent("PreSerialiseTransformRefs", AL::event::kUSDMayaEventType, Global::postSave());
+  registerEvent("PostSerialiseTransformRefs", AL::event::kUSDMayaEventType, Global::postSave());
+  registerEvent("PreDeserialiseTransformRefs", AL::event::kUSDMayaEventType, Global::postRead());
+  registerEvent("PostDeserialiseTransformRefs", AL::event::kUSDMayaEventType, Global::postRead());
+  registerEvent("EditTargetChanged", AL::event::kUSDMayaEventType);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

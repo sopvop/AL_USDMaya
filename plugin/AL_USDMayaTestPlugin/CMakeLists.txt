@@ -8,21 +8,25 @@ find_package(GTest REQUIRED)
 set(PXR_PACKAGE AL_USDMayaTestPlugin)
 
 list(APPEND AL_maya_test_headers
-        AL/UnitTestHarness.h
-        AL/maya/tests/CommandGuiHelperTest.h
-        AL/maya/tests/NodeHelperUnitTest.h
-        test_usdmaya.h
+    AL/UnitTestHarness.h
+    test_usdmaya.h
 )
+
 list(APPEND AL_maya_test_source
         AL/UnitTestHarness.cpp
-        AL/maya/tests/CommandGuiHelperTest.cpp
-        AL/maya/tests/NodeHelperUnitTest.cpp
+        AL/maya/test_EventHandler.cpp
+        AL/maya/test_MayaEventManager.cpp
         AL/usdmaya/commands/test_ImportCommands.cpp
         AL/usdmaya/commands/test_ExportCommands.cpp
         AL/usdmaya/commands/test_LayerCommands.cpp
         AL/usdmaya/commands/test_ProxyShapeSelect.cpp
         AL/usdmaya/commands/test_InternalProxySelection.cpp
         AL/usdmaya/commands/test_ProxyShapeImport.cpp
+        AL/usdmaya/fileio/export_blendshape.cpp
+        AL/usdmaya/fileio/export_constraints.cpp
+        AL/usdmaya/fileio/export_ik.cpp
+        AL/usdmaya/fileio/export_lattice.cpp
+        AL/usdmaya/fileio/export_nonlinear.cpp
         AL/usdmaya/nodes/test_ActiveInactive.cpp
         AL/usdmaya/nodes/test_LayerManager.cpp
         AL/usdmaya/nodes/test_ProxyShape.cpp
@@ -33,8 +37,6 @@ list(APPEND AL_maya_test_source
         AL/usdmaya/nodes/proxy/test_DrivenTransforms.cpp
         AL/usdmaya/nodes/proxy/test_PrimFilter.cpp
         AL/usdmaya/test_SelectabilityDB.cpp
-        test_maya_MenuBuilder.cpp
-        test_maya_NodeHelper.cpp
         test_translators_AnimationTranslator.cpp
         test_translators_CameraTranslator.cpp
         test_translators_DgTranslator.cpp
@@ -43,7 +45,6 @@ list(APPEND AL_maya_test_source
         test_translators_TransformTranslator.cpp
         test_translators_Translator.cpp
         test_usdmaya_AttributeType.cpp
-        test_usdmaya_Utils.cpp
         test_usdmaya.cpp
 )
 
@@ -58,7 +59,7 @@ pxr_plugin(${PXR_PACKAGE}
         ar
         arch
         AL_USDMaya
-      	usdImaging
+        usdImaging
         usdImagingGL
         ${GTEST_LIBRARIES}
         ${MAYA_LIBRARIES}

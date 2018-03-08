@@ -14,7 +14,6 @@
 // limitations under the License.
 //
 #include "AL/usdmaya/TypeIDs.h"
-#include "AL/usdmaya/Utils.h"
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/nodes/Layer.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
@@ -27,6 +26,7 @@
 #include "maya/MArrayDataBuilder.h"
 #include "maya/MArrayDataHandle.h"
 #include "maya/MSelectionList.h"
+#include "AL/usdmaya/utils/Utils.h"
 
 namespace AL {
 namespace usdmaya {
@@ -65,7 +65,6 @@ MObject Layer::m_assetName = MObject::kNullObj;
 MObject Layer::m_nameOnLoad = MObject::kNullObj;
 MObject Layer::m_serialized = MObject::kNullObj;
 MObject Layer::m_hasBeenEditTarget = MObject::kNullObj;
-
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus Layer::initialise()

@@ -14,9 +14,13 @@
 // limitations under the License.
 //
 #pragma once
-#include "AL/usdmaya/Common.h"
-#include "AL/maya/NodeHelper.h"
+#include <AL/usdmaya/ForwardDeclares.h>
+
+#include "AL/maya/utils/NodeHelper.h"
+#include "AL/usdmaya/utils/ForwardDeclares.h"
+#include "AL/maya/utils/MayaHelperMacros.h"
 #include "maya/MPxTransform.h"
+
 
 namespace AL {
 namespace usdmaya {
@@ -75,11 +79,12 @@ namespace nodes {
 //----------------------------------------------------------------------------------------------------------------------
 class Transform
   : public MPxTransform,
-    public maya::NodeHelper
+    public AL::maya::utils::NodeHelper
 {
 public:
 
-    ~Transform();
+  Transform();
+  ~Transform();
 
   //--------------------------------------------------------------------------------------------------------------------
   // Type Info & Registration
@@ -129,6 +134,11 @@ private:
   MPxTransformationMatrix* createTransformationMatrix() override;
   MStatus compute(const MPlug &plug, MDataBlock &datablock) override;
   void postConstructor() override;
+  MBoundingBox boundingBox() const override;
+  bool isBounded() const override
+    { return true; }
+  bool treatAsTransform() const override
+    { return false; }
 
   //--------------------------------------------------------------------------------------------------------------------
   /// utils

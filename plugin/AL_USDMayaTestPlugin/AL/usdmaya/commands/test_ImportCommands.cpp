@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #include "test_usdmaya.h"
-#include "AL/usdmaya/Utils.h"
+#include "AL/usdmaya/utils/Utils.h"
 
 #include "pxr/usd/usdGeom/xformable.h"
 
@@ -68,7 +68,7 @@ def Xform "top" {
   MFileIO::newFile(true);
 
   MString importCmd;
-  importCmd.format(MString("AL_usdmaya_ImportCommand -f \"^1s\""), AL::usdmaya::convert(temp_path));
+  importCmd.format(MString("AL_usdmaya_ImportCommand -f \"^1s\""), AL::maya::utils::convert(temp_path));
   MGlobal::executeCommand(importCmd);
 
   MSelectionList sel;

@@ -15,7 +15,6 @@
 //
 #include "AL/usdmaya/fileio/translators/TransformTranslator.h"
 #include "AL/usdmaya/AttributeType.h"
-#include "AL/usdmaya/Utils.h"
 #include "AL/usdmaya/fileio/ExportParams.h"
 #include "AL/usdmaya/fileio/AnimationTranslator.h"
 #include "AL/usdmaya/nodes/Transform.h"
@@ -39,6 +38,7 @@
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
+#include "AL/usdmaya/utils/Utils.h"
 #include "usdMaya/xformStack.h"
 
 namespace AL {
@@ -533,7 +533,7 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
     {
       return MS::kFailure;
     }
-    MFnTransform(to).set(matrixToMTransformationMatrix(value));
+    MFnTransform(to).set(AL::usdmaya::utils::matrixToMTransformationMatrix(value));
   }
 
   AL_MAYA_CHECK_ERROR2(setBool(to, m_inheritsTransform, !resetsXformStack), xformError);

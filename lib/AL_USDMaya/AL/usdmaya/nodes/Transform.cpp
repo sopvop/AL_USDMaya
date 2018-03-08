@@ -19,6 +19,7 @@
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 
+#include "maya/MBoundingBox.h"
 #include "maya/MDataBlock.h"
 #include "maya/MEvaluationNodeIterator.h"
 #include "maya/MGlobal.h"
@@ -32,8 +33,8 @@
 #include "pxr/usd/usd/stageCacheContext.h"
 #include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usdGeom/tokens.h"
+#include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdUtils/stageCache.h"
-
 
 namespace AL {
 namespace usdmaya {
@@ -59,6 +60,11 @@ MObject Transform::m_readAnimatedValues = MObject::kNullObj;
 void Transform::postConstructor()
 {
   transform()->setMObject(thisMObject());
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+Transform::Transform()
+{
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -174,9 +180,11 @@ void Transform::updateTransform(MDataBlock& dataBlock)
   MTime theTime = (inputTimeValue(dataBlock, m_time) - inputTimeValue(dataBlock, m_timeOffset)) * inputDoubleValue(dataBlock, m_timeScalar);
   outputTimeValue(dataBlock, m_outTime, theTime);
 
+  UsdTimeCode usdTime(theTime.as(MTime::uiUnit()));
+
   // update the transformation matrix to the values at the specified time
   TransformationMatrix* m = transform();
-  m->updateToTime(UsdTimeCode(theTime.as(MTime::uiUnit())));
+  m->updateToTime(usdTime);
 
   // if translation animation is present, update the translate attribute (or just flag it as clean if no animation exists)
   if(m->hasAnimatedTranslation())
@@ -229,6 +237,33 @@ void Transform::setPrim(const UsdPrim& prim)
   transform()->setPrimInternal(prim);
   // Now make sure our own attributes are up-to-date
   dirtyMatrix();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MBoundingBox Transform::boundingBox() const
+{
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("Transform::boundingBox\n");
+  MTime theTime;
+  outTimePlug().getValue(theTime);
+  UsdTimeCode usdTime(theTime.as(MTime::uiUnit()));
+
+  // grab prim from the dataBlock
+  UsdPrim prim  = transform()->prim();
+
+  // check for a geometry type underneath this transform
+  if(prim && prim.GetTypeName() == "Mesh")
+  {
+    UsdGeomMesh geom(prim);
+    const TfToken token("default");
+    const GfBBox3d box = geom.ComputeLocalBound(usdTime, token);
+    const GfRange3d range = box.GetRange();
+    const GfVec3d minMin = range.GetMin();
+    const GfVec3d minMax = range.GetMax();
+    const MVector minBound(minMin[0], minMin[1], minMin[2]);
+    const MVector maxBound(minMax[0], minMax[1], minMax[2]);
+    return MBoundingBox(minBound, maxBound);
+  }
+  return MPxTransform::boundingBox();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -332,15 +367,19 @@ MStatus Transform::validateAndSetValue(const MPlug& plug, const MDataHandle& han
     if (data && data->stage)
     {
       MString path = inputStringValue(dataBlock, m_primPath);
-      SdfPath primPath(path.asChar());
-      UsdPrim usdPrim = data->stage->GetPrimAtPath(primPath);
+      SdfPath primPath;
+      UsdPrim usdPrim;
+      if(path.length())
+      {
+        primPath = SdfPath(path.asChar());
+        usdPrim = data->stage->GetPrimAtPath(primPath);
+      }
       setPrim(usdPrim);
     }
     else
     {
       setPrim(UsdPrim());
     }
-//    updateTransform(dataBlock);
     return MS::kSuccess;
   }
   else
@@ -349,13 +388,20 @@ MStatus Transform::validateAndSetValue(const MPlug& plug, const MDataHandle& han
     MDataBlock dataBlock = forceCache(*(MDGContext *)&context);
     MString path = handle.asString();
     outputStringValue(dataBlock, m_primPath, path);
-    SdfPath primPath(path.asChar());
+
     StageData* data = inputDataValue<StageData>(dataBlock, m_inStageData);
     if (data && data->stage)
     {
-      UsdPrim usdPrim = data->stage->GetPrimAtPath(primPath);
+      SdfPath primPath;
+      UsdPrim usdPrim;
+      if(path.length())
+      {
+        primPath = SdfPath(path.asChar());
+        usdPrim = UsdPrim(data->stage->GetPrimAtPath(primPath));
+      }
       setPrim(usdPrim);
-      updateTransform(dataBlock);
+      if(usdPrim)
+        updateTransform(dataBlock);
     }
     else
     {

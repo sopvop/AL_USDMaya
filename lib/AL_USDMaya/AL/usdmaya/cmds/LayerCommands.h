@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 #pragma once
-#include "AL/usdmaya/Common.h"
-
+#include "AL/usdmaya/ForwardDeclares.h"
+#include "AL/maya/utils/MayaHelperMacros.h"
 #include "maya/MDGModifier.h"
 #include "maya/MObject.h"
 #include "maya/MPxCommand.h"
@@ -24,11 +24,10 @@
 #include "pxr/usd/usd/stage.h"
 #include <functional>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace AL {
 namespace usdmaya {
 namespace cmds {
+
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  Helper class
 /// \ingroup commands
@@ -90,9 +89,10 @@ class LayerCreateLayer
 {
   UsdStageRefPtr m_stage;
   SdfLayerHandle m_rootLayer;
-  SdfLayerHandle m_newLayer;
+  SdfLayerRefPtr m_newLayer;
   MString m_filePath;
   nodes::ProxyShape* m_shape;
+  bool m_addSublayer = false;
   bool m_layerWasInserted;
 
 public:

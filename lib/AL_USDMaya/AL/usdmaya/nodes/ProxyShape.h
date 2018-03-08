@@ -14,9 +14,11 @@
 // limitations under the License.
 //
 #pragma once
+#include <AL/usdmaya/ForwardDeclares.h>
+#include "AL/maya/utils/NodeHelper.h"
+#include "AL/event/EventHandler.h"
+#include "AL/maya/event/MayaEventManager.h"
 #include <AL/usdmaya/SelectabilityDB.h>
-#include "AL/usdmaya/Common.h"
-#include "AL/maya/NodeHelper.h"
 #include "AL/usdmaya/DrivenTransformsData.h"
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
@@ -39,6 +41,7 @@
 #include "pxr/usd/sdf/notice.h"
 #include <stack>
 #include <functional>
+#include "AL/usd/utils/ForwardDeclares.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -78,6 +81,7 @@ namespace nodes {
 //----------------------------------------------------------------------------------------------------------------------
 struct SelectionUndoHelper
 {
+  /// a hash set of SdfPaths
   typedef TfHashSet<SdfPath, SdfPath::Hash> SdfPathHashSet;
 
   /// \brief  Construct with the arguments to select / deselect nodes on a proxy shape
@@ -115,6 +119,7 @@ private:
 class SelectionList
 {
 public:
+  /// a hash set of SdfPaths
   typedef TfHashSet<SdfPath, SdfPath::Hash> SdfPathHashSet;
 
   /// \brief  default ctor
@@ -179,32 +184,51 @@ private:
   SdfPathHashSet m_selected;
 };
 
-//typedef functions
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  A class that provides the logic behind a hierarchy traversal through a UsdStage
+//----------------------------------------------------------------------------------------------------------------------
 struct  HierarchyIterationLogic
 {
+  /// \brief  ctor
   HierarchyIterationLogic():
       preIteration(nullptr),
       iteration(nullptr),
       postIteration(nullptr)
   {}
 
+  /// \brief  provide a method to be called prior to iteration of the UsdStage hierarchy
   std::function<void()> preIteration;
+
+  /// \brief  a visitor method that is called on each of the UsdPrims in the stage hierarchy
   std::function<void(const fileio::TransformIterator& transformIterator,const UsdPrim& prim)> iteration;
+
+  /// \brief  provide a method to be called after iteration of the UsdStage hierarchy
   std::function<void()> postIteration;
 };
 
-struct FindUnselectablePrimsLogic : public HierarchyIterationLogic
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  implements the logic that constructs a list of objects that need to be added or removed from the selectable
+///         list of prims within a UsdStage
+//----------------------------------------------------------------------------------------------------------------------
+struct FindUnselectablePrimsLogic
+  : public HierarchyIterationLogic
 {
-  SdfPathVector newUnselectables;
-  SdfPathVector removeUnselectables;
+  SdfPathVector newUnselectables; ///< items that need to be made unselectable
+  SdfPathVector removeUnselectables; ///< items that are unselectable, but need to be made selectable
 };
 
-struct FindLockedPrimsLogic : public HierarchyIterationLogic
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  implements the logic required when searching for locked prims within a UsdStage
+//----------------------------------------------------------------------------------------------------------------------
+struct FindLockedPrimsLogic
+  : public HierarchyIterationLogic
 {
 };
 
 typedef const HierarchyIterationLogic*  HierarchyIterationLogics[3];
 
+extern AL::event::EventId kPreClearStageCache;
+extern AL::event::EventId kPostClearStageCache;
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  A custom proxy shape node that attaches itself to a USD file, and then renders it.
@@ -214,8 +238,9 @@ typedef const HierarchyIterationLogic*  HierarchyIterationLogics[3];
 //----------------------------------------------------------------------------------------------------------------------
 class ProxyShape
   : public MPxSurfaceShape,
-    public maya::NodeHelper,
+    public AL::maya::utils::NodeHelper,
     public proxy::PrimFilterInterface,
+    public AL::event::NodeEvents,
     public TfWeakBase
 {
   friend class SelectionUndoHelper;
@@ -223,6 +248,10 @@ class ProxyShape
   friend class StageReloadGuard;
 public:
 
+  /// a method that registers all of the events in the ProxyShape
+  void registerEvents();
+
+  /// a set of SdfPaths
   typedef TfHashSet<SdfPath, SdfPath::Hash> SdfPathHashSet;
 
   /// \brief  a mapping between a maya transform (or MObject::kNullObj), and the prim that exists at that location
@@ -336,9 +365,15 @@ public:
   /// \name   Public Utils
   //--------------------------------------------------------------------------------------------------------------------
 
-  /// \brief  provides access to the UsdStage that this proxy shape is currently representing
+  /// \brief  provides access to the UsdStage that this proxy shape is currently representing. This will cause a compute
+  ///         on the output stage.
   /// \return the proxy shape
   UsdStageRefPtr getUsdStage() const;
+
+  /// \brief  provides access to the UsdStage that this proxy shape is currently representing
+  /// \return the proxy shape
+  UsdStageRefPtr usdStage() const
+    { return m_stage; }
 
   /// \brief  gets hold of the attributes on this node that control the rendering in some way
   /// \param  attribs the returned set of render attributes (should be of type: UsdImagingGLEngine::RenderParams*. Hiding
@@ -576,7 +611,6 @@ public:
   ///         the user does, ie, "AL_usdmaya_ProxyShapeSelect -pp /foo/bar -pp /some/thing -proxy myProxyShape",
   //          they will get as the result of the command, ["|proxyRoot|foo|bar", "|proxyRoot|some|thing"], and be able
   //          to know what input SdfPath corresponds to what ouptut maya path
-  SdfPathVector m_pathsOrdered;
   /// \return true if the operation succeeded
   bool doSelect(SelectionUndoHelper& helper, const SdfPathVector& orderedPaths);
 
@@ -696,10 +730,18 @@ public:
   const AL::usdmaya::SelectabilityDB& selectabilityDB() const
     { return const_cast<ProxyShape*>(this)->selectabilityDB(); }
 
+  /// \brief  used to reload the stage after file open
   void loadStage();
 
+  /// \brief  adds the attribute changed callback to the proxy shape
+  void addAttributeChangedCallback();
 
+  /// \brief  removes the attribute changed callback from the proxy shape
+  void removeAttributeChangedCallback();
+
+  void constructLockPrims();
 private:
+
   static void onSelectionChanged(void* ptr);
   bool removeAllSelectedNodes(SelectionUndoHelper& helper);
   void removeTransformRefs(const std::vector<std::pair<SdfPath, MObject>>& removedRefs, TransformReason reason);
@@ -708,7 +750,6 @@ private:
   void constructExcludedPrims();
   bool updateLockPrims(const SdfPathSet& lockTransformPrims, const SdfPathSet& lockInheritedPrims,
                        const SdfPathSet& unlockedPrims);
-  void constructLockPrims();
   bool lockTransformAttribute(const SdfPath& path, bool lock);
 
   MObject makeUsdTransformChain_internal(
@@ -865,6 +906,7 @@ private:
     }
 
 private:
+  SdfPathVector m_pathsOrdered;
   static std::vector<MObjectHandle> m_unloadedProxyShapes;
 
   AL::usdmaya::SelectabilityDB m_selectabilityDB;
@@ -881,8 +923,9 @@ private:
   TfNotice::Key m_editTargetChanged;
 
   mutable std::map<UsdTimeCode, MBoundingBox> m_boundingBoxCache;
-  MCallbackId m_attributeChanged;
-  MCallbackId m_onSelectionChanged;
+  AL::event::CallbackId m_beforeSaveSceneId = -1;
+  MCallbackId m_attributeChanged = -1;
+  MCallbackId m_onSelectionChanged = -1;
   SdfPathVector m_excludedGeometry;
   SdfPathVector m_excludedTaggedGeometry;
   SdfPathSet m_lockTransformPrims;

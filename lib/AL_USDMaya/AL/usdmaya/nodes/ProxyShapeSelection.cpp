@@ -17,7 +17,6 @@
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 #include "AL/usdmaya/TypeIDs.h"
-#include "AL/usdmaya/Utils.h"
 #include "AL/usdmaya/Metadata.h"
 #include "AL/usdmaya/DebugCodes.h"
 
@@ -26,12 +25,14 @@
 
 #include <set>
 #include <algorithm>
+#include "AL/usdmaya/utils/Utils.h"
 
 
 namespace AL {
 namespace usdmaya {
 namespace nodes {
 namespace {
+typedef void (*proxy_function_prototype)(void* userData, AL::usdmaya::nodes::ProxyShape* proxyInstance);
 inline void addObjToSelectionList(MSelectionList& list, const MObject& object)
 {
   if(object.hasFn(MFn::kDagNode))
@@ -543,7 +544,7 @@ MObject ProxyShape::makeUsdTransformChain(
   bool hasMetadata = usdPrim.GetMetadata(Metadata::transformType, &transformType);
   if(hasMetadata && !transformType.empty())
   {
-    node = modifier.createNode(convert(transformType), parentNode);
+    node = modifier.createNode(AL::maya::utils::convert(transformType), parentNode);
     isTransform = false;
     isUsdTransform = false;
     TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShape::makeUsdTransformChain created transformType=%s name=%s\n", transformType.c_str(), usdPrim.GetName().GetText());
@@ -555,7 +556,7 @@ MObject ProxyShape::makeUsdTransformChain(
   }
 
   fn.setObject(node);
-  fn.setName(convert(usdPrim.GetName().GetString()));
+  fn.setName(AL::maya::utils::convert(usdPrim.GetName().GetString()));
 
   //Retrieve the proxy shapes transform path which will be used in the UsdPrim->MayaNode mapping in the case where there is delayed node creation.
   MFnDagNode shapeFn(thisMObject());
@@ -563,9 +564,9 @@ MObject ProxyShape::makeUsdTransformChain(
   MDagPath mayaPath;
   MDagPath::getAPathTo(shapeParent, mayaPath);
   if(resultingPath)
-    *resultingPath = mapUsdPrimToMayaNode(usdPrim, node, &mayaPath);
+    *resultingPath = AL::usdmaya::utils::mapUsdPrimToMayaNode(usdPrim, node, &mayaPath);
   else
-    mapUsdPrimToMayaNode(usdPrim, node, &mayaPath);
+    AL::usdmaya::utils::mapUsdPrimToMayaNode(usdPrim, node, &mayaPath);
 
   if(isUsdTransform)
   {
@@ -642,7 +643,7 @@ void ProxyShape::makeUsdTransformsInternal(const UsdPrim& usdPrim, const MObject
       UsdPrim prim = *it;
       MObject node = modifier.createNode(Transform::kTypeId, parentNode);
       fn.setObject(node);
-      fn.setName(convert(prim.GetName().GetString()));
+      fn.setName(AL::maya::utils::convert(prim.GetName().GetString()));
       Transform* ptrNode = (Transform*)fn.userNode();
       MPlug inStageData = ptrNode->inStageDataPlug();
       MPlug inTime = ptrNode->timePlug();
@@ -682,7 +683,8 @@ void ProxyShape::removeUsdTransformChain_internal(
   MObject object = MObject::kNullObj;
   while(parentPrim)
   {
-    auto it = m_requiredPaths.find(parentPrim.GetPath());
+    SdfPath primPath = parentPrim.GetPath();
+    auto it = m_requiredPaths.find(primPath);
     if(it == m_requiredPaths.end())
     {
       return;
@@ -696,6 +698,7 @@ void ProxyShape::removeUsdTransformChain_internal(
         modifier.reparentNode(object);
         modifier.deleteNode(object);
       }
+      m_currentLockedPrims.erase(primPath);
     }
 
     parentPrim = parentPrim.GetParent();
@@ -728,6 +731,7 @@ void ProxyShape::removeUsdTransformChain(
         modifier.reparentNode(object);
         modifier.deleteNode(object);
       }
+      m_currentLockedPrims.erase(parentPrim);
       m_requiredPaths.erase(it);
     }
 
@@ -875,6 +879,7 @@ void SelectionUndoHelper::doIt()
     MGlobal::setActiveSelectionList(m_newSelection, MGlobal::kReplaceList);
   }
   m_proxy->m_pleaseIgnoreSelection = false;
+  m_proxy->constructLockPrims();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -892,6 +897,7 @@ void SelectionUndoHelper::undoIt()
     MGlobal::setActiveSelectionList(m_previousSelection, MGlobal::kReplaceList);
   }
   m_proxy->m_pleaseIgnoreSelection = false;
+  m_proxy->constructLockPrims();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1235,11 +1241,14 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
 
   if(newlySelectedPaths.length())
   {
+    triggerEvent("PreSelectionChanged");
+
     MPxCommand::setResult(newlySelectedPaths);
+
+    triggerEvent("PostSelectionChanged");
   }
 
   m_pleaseIgnoreSelection = false;
-
   return true;
 }
 
