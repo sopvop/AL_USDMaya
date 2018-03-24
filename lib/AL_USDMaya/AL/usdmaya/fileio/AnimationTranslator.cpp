@@ -12,7 +12,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
+
+#include "AL/usdmaya/utils/MeshUtils.h"
 #include "AL/usdmaya/fileio/ExportParams.h"
 #include "AL/usdmaya/fileio/AnimationTranslator.h"
 #include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
@@ -86,7 +87,9 @@ bool AnimationTranslator::isAnimated(MPlug attr, const bool assumeExpressionIsAn
         // If there are 2 or more keyframes on this curve, assume its value changes.
         MFnAnimCurve curve(connectedNode);
         if(curve.numKeys() > 1)
+        {
           return true;
+        }
       }
       else
       {
@@ -96,7 +99,9 @@ bool AnimationTranslator::isAnimated(MPlug attr, const bool assumeExpressionIsAn
 
     // if all connected nodes are anim curves, and all have 1 or zero keys, the plug is not animated.
     if(i == n)
+    {
       return false;
+    }
   }
 
   // if we get here, recurse through the upstream connections looking for a time or expression node
@@ -202,7 +207,7 @@ void AnimationTranslator::exportAnimation(const ExporterParams& params)
         ///         maya::Dg
         ///         usdmaya::Dg
         ///         usdmaya::fileio::translator::Dg
-        translators::DgNodeTranslator::copyAttributeValue(it->first.first, it->first.second, it->second, timeCode);
+        translators::DgNodeTranslator::copyAttributeValue(it->first, it->second.attr, it->second.scale, timeCode);
       }
       for (auto it = startTransformAttrib; it != endTransformAttrib; ++it)
       {
@@ -210,7 +215,7 @@ void AnimationTranslator::exportAnimation(const ExporterParams& params)
       }
       for(auto it = startMesh; it != endMesh; ++it)
       {
-        translators::MeshTranslator::copyVertexData(MFnMesh(it->first), it->second, timeCode);
+        AL::usdmaya::utils::copyVertexData(MFnMesh(it->first), it->second, timeCode);
       }
     }
   }

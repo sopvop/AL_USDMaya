@@ -66,6 +66,16 @@ void wrapAL_usd_ModelAPI()
         .def("Get", &This::Get, (arg("stage"), arg("path")))
         .staticmethod("Get")
 
+        .def("Apply", &This::Apply, (arg("stage"), arg("path")))
+        .staticmethod("Apply")
+
+        .def("IsConcrete",
+            static_cast<bool (*)(void)>( [](){ return This::IsConcrete; }))
+        .staticmethod("IsConcrete")
+
+        .def("IsTyped",
+            static_cast<bool (*)(void)>( [](){ return This::IsTyped; } ))
+        .staticmethod("IsTyped")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
@@ -110,7 +120,10 @@ WRAP_CUSTOM {
     typedef AL_usd_ModelAPI This;
     _class
       .def("SetSelectability", &This::SetSelectability, (arg("selectability")))
-      .def("GetSelectabilityValue", &This::GetSelectabilityValue)
+      .def("GetSelectability", &This::GetSelectability)
+      .def("SetLock", &This::SetLock, (arg("lock")))
+      .def("GetLock", &This::GetLock)
+      .def("ComputeLock", &This::ComputeLock)
     ;
 }
 }

@@ -16,8 +16,10 @@
 #include "test_usdmaya.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
-#include "AL/usdmaya/nodes/Layer.h"
+#include "AL/usdmaya/nodes/LayerManager.h"
 #include "AL/usdmaya/StageCache.h"
+#include "AL/usdmaya/fileio/translators/TranslatorContext.h"
+
 #include "maya/MFnTransform.h"
 #include "maya/MSelectionList.h"
 #include "maya/MGlobal.h"
@@ -25,17 +27,19 @@
 #include "maya/MDagModifier.h"
 #include "maya/MFileIO.h"
 #include "maya/MStringArray.h"
+#include "maya/MCommonSystemUtils.h"
 
-#include "pxr/usd/usd/stage.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/usd/attribute.h"
+#include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usd/usdaFileFormat.h"
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
 
+#include <iostream>
+#include <fstream>
+
 // UsdStageRefPtr ProxyShape::getUsdStage() const;
-// Layer* ProxyShape::findLayer(SdfLayerHandle handle);
-// MString ProxyShape::findLayerMayaName(SdfLayerHandle handle);
-// Layer* ProxyShape::getLayer();
 // UsdPrim ProxyShape::getRootPrim()
 TEST(ProxyShape, basicProxyShapeSetUp)
 {
@@ -83,7 +87,7 @@ TEST(ProxyShape, basicProxyShapeSetUp)
     auto stage = proxy->getUsdStage();
 
     // stage should be valid
-    EXPECT_TRUE(stage);
+    ASSERT_TRUE(stage);
 
     // should be composed of two layers
     SdfLayerHandle session = stage->GetSessionLayer();
@@ -94,53 +98,9 @@ TEST(ProxyShape, basicProxyShapeSetUp)
     // make sure path is correct
     EXPECT_EQ(temp_path, root->GetRealPath());
 
-    // grab the names of the maya nodes from the SdfLayers
-    MString sessionName = proxy->findLayerMayaName(session);
-    MString rootName = proxy->findLayerMayaName(root);
-
-    // grab pointers to the mays nodes for the two layers
-    AL::usdmaya::nodes::Layer* sessionNode = proxy->findLayer(session);
-    AL::usdmaya::nodes::Layer* rootNode = proxy->findLayer(root);
-    EXPECT_TRUE(sessionNode != 0);
-    EXPECT_TRUE(rootNode != 0);
-
-    {
-      // the first layer should be the session layer
-      AL::usdmaya::nodes::Layer* sessionLayer = proxy->getLayer();
-      EXPECT_EQ(sessionLayer, sessionNode);
-
-      // the first sublayer to the session layer should be the root layer
-      std::vector<AL::usdmaya::nodes::Layer*> subLayers = sessionLayer->getChildLayers();
-      EXPECT_EQ(size_t(1), subLayers.size());
-      if(subLayers.size())
-      {
-        EXPECT_EQ(rootNode, subLayers[0]);
-      }
-    }
-
-    // these should match!
-    EXPECT_TRUE(sessionNode->getHandle());
-    if(sessionNode->getHandle())
-    {
-      EXPECT_TRUE(session == sessionNode->getHandle());
-    }
-
-    EXPECT_TRUE(rootNode->getHandle());
-    if(rootNode->getHandle())
-    {
-      EXPECT_TRUE(root == rootNode->getHandle());
-    }
-
-    // please don't crash if I pass a NULL layer handle
-    EXPECT_EQ(nullptr, proxy->findLayer(SdfLayerHandle()));
-    EXPECT_EQ(MString(), proxy->findLayerMayaName(SdfLayerHandle()));
-
-    {
-      // please don't crash if I pass a valid layer, that isn't in any way involved in the composed stage
-      SdfLayerHandle temp = SdfLayer::CreateNew("hello_dave");
-      EXPECT_EQ(nullptr, proxy->findLayer(temp));
-      EXPECT_EQ(MString(), proxy->findLayerMayaName(temp));
-    }
+    // before we save, the layerManager won't exist!
+    AL::usdmaya::nodes::LayerManager* layerManager = AL::usdmaya::nodes::LayerManager::findManager();
+    EXPECT_FALSE(layerManager);
 
     // UsdPrim ProxyShape::getRootPrim()
     UsdPrim rootPrim = proxy->getRootPrim();
@@ -165,10 +125,33 @@ TEST(ProxyShape, basicProxyShapeSetUp)
 
     EXPECT_TRUE(session->ExportToString(&sessionLayerContents));
     EXPECT_FALSE(sessionLayerContents.empty());
-  }
 
-  // save the maya file (the modifications we made to the session layer should be present when we reload)
-  EXPECT_EQ(MStatus(MS::kSuccess), MFileIO::saveAs("/tmp/AL_USDMayaTests_basicProxyShapeSetUp.ma"));
+    // save the maya file (the modifications we made to the session layer should be present when we reload)
+    EXPECT_EQ(MStatus(MS::kSuccess), MFileIO::saveAs("/tmp/AL_USDMayaTests_basicProxyShapeSetUp.ma"));
+
+    // after saving, we should have a layerManager
+    layerManager = AL::usdmaya::nodes::LayerManager::findManager();
+    ASSERT_TRUE(layerManager);
+    SdfLayerHandle refoundExpectedLayer = layerManager->findLayer(session->GetIdentifier());
+    EXPECT_TRUE(session->IsDirty());
+    EXPECT_TRUE(refoundExpectedLayer);
+    EXPECT_EQ(refoundExpectedLayer, session);
+
+    // Because root layer isn't dirty, don't expect it to be saved out
+    EXPECT_FALSE(root->IsDirty());
+    refoundExpectedLayer = layerManager->findLayer(root->GetIdentifier());
+    EXPECT_FALSE(refoundExpectedLayer);
+
+    // please don't crash if I pass a NULL layer handle
+    EXPECT_EQ(SdfLayerHandle(), layerManager->findLayer(""));
+
+    {
+      // please don't crash if I pass a valid layer, that isn't in any way involved in the composed stage
+      SdfLayerRefPtr temp = SdfLayer::CreateNew("hello_dave.usda");
+      EXPECT_EQ(nullptr, layerManager->findLayer(temp->GetIdentifier()));
+    }
+
+  }
 
   // nuke everything
   EXPECT_EQ(MStatus(MS::kSuccess), MFileIO::newFile(true));
@@ -205,7 +188,7 @@ TEST(ProxyShape, basicProxyShapeSetUp)
     auto stage = proxy->getUsdStage();
 
     // stage should be valid
-    EXPECT_TRUE(stage);
+    ASSERT_TRUE(stage);
 
     // should be composed of two layers
     SdfLayerHandle session = stage->GetSessionLayer();
@@ -216,37 +199,11 @@ TEST(ProxyShape, basicProxyShapeSetUp)
     // make sure path is correct
     EXPECT_EQ(temp_path, root->GetRealPath());
 
-    // grab the names of the maya nodes from the SdfLayers
-    MString sessionName = proxy->findLayerMayaName(session);
-
-    MString rootName = proxy->findLayerMayaName(root);
-
-    // grab pointers to the maya nodes for the two layers
-    AL::usdmaya::nodes::Layer* sessionNode = proxy->findLayer(session);
-    AL::usdmaya::nodes::Layer* rootNode = proxy->findLayer(root);
-
-    EXPECT_TRUE(sessionNode != 0);
-    EXPECT_TRUE(rootNode != 0);
-
-    {
-      // the first layer should be the session layer
-      AL::usdmaya::nodes::Layer* sessionLayer = proxy->getLayer();
-      EXPECT_EQ(sessionLayer, sessionNode);
-
-      MFnDependencyNode fng(sessionLayer->thisMObject());
-
-      // the first sublayer to the session layer should be the root layer
-      std::vector<AL::usdmaya::nodes::Layer*> subLayers = sessionLayer->getChildLayers();
-      EXPECT_EQ(size_t(1), subLayers.size());
-      if(subLayers.size())
-      {
-        EXPECT_EQ(rootNode, subLayers[0]);
-      }
-    }
-
-    // these should match!
-    EXPECT_TRUE(sessionNode && session == sessionNode->getHandle());
-    EXPECT_TRUE(rootNode && root == rootNode->getHandle());
+    AL::usdmaya::nodes::LayerManager* layerManager = AL::usdmaya::nodes::LayerManager::findManager();
+    ASSERT_TRUE(layerManager);
+    SdfLayerHandle refoundExpectedLayer = layerManager->findLayer(root->GetIdentifier());
+    // Root wasn't dirty, shouldn't have been saved out
+    EXPECT_FALSE(refoundExpectedLayer);
 
     // UsdPrim ProxyShape::getRootPrim()
     UsdPrim rootPrim = proxy->getRootPrim();
@@ -262,7 +219,7 @@ TEST(ProxyShape, basicProxyShapeSetUp)
     bool foo = 0;
     ordered = rtoe1Geom.GetOrderedXformOps(&foo);
 
-    EXPECT_EQ(size_t(1), ordered.size());
+    ASSERT_EQ(size_t(1), ordered.size());
 
     // add some scale value to the geom (we can hunt this down later
     UsdGeomXformOp scaleOp = ordered[0];
@@ -996,6 +953,137 @@ TEST(ProxyShape, basicTransformChainOperations2)
   }
 }
 
+// Make sure that if we make a brand new layer, make it the edit target, then
+// change it away, then save, the layer is saved
+TEST(ProxyShape, editTargetChangeAndSave)
+{
+  constexpr auto mayaAsciiPath = "/tmp/AL_USDMayaTests_editTargetChangeAndSave.ma";
+  const SdfPath dirtiestPrimPath = SdfPath("/world/dirtiestPrim");
+
+  MFileIO::newFile(true);
+  auto constructTransformChain = [] ()
+  {
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+
+    UsdGeomXform root = UsdGeomXform::Define(stage, SdfPath("/world"));
+    return stage;
+  };
+
+  const std::string temp_path = "/tmp/AL_USDMayaTests_ProxyShape_editTargetChangeAndSave.usda";
+
+  // generate some data for the proxy shape
+  {
+    auto stage = constructTransformChain();
+    stage->Export(temp_path, false);
+  }
+
+  MString shapeName;
+  {
+    MFnDagNode fn;
+    MObject xform = fn.create("transform");
+    MObject shape = fn.create("AL_usdmaya_ProxyShape", xform);
+    shapeName = fn.name();
+
+    AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
+
+    // force the stage to load
+    proxy->filePathPlug().setString(temp_path.c_str());
+
+    auto stage = proxy->getUsdStage();
+
+    auto newLayer = SdfLayer::New(SdfFileFormat::FindById(UsdUsdaFileFormatTokens->Id),
+        "/tmp/AL_USDMayaTests_fresh_layer.usda");
+
+    stage->GetSessionLayer()->InsertSubLayerPath(newLayer->GetIdentifier());
+    // At the time newLayer is made the edit target, it shouldn't be dirty!
+    stage->SetEditTarget(newLayer);
+    // Now make edits to the stage, which should go to newLayer, making it dirty...
+    stage->DefinePrim(dirtiestPrimPath);
+    // Now change edit target away again
+    stage->SetEditTarget(stage->GetRootLayer());
+
+    // save the maya file
+    EXPECT_EQ(MStatus(MS::kSuccess), MFileIO::saveAs(mayaAsciiPath));
+  }
+
+  {
+    // reopen - the stage should have the world's dirtiest prim!
+    EXPECT_EQ(MStatus(MS::kSuccess), MFileIO::open(mayaAsciiPath, NULL, true));
+
+    MSelectionList sl;
+    EXPECT_EQ(MStatus(MS::kSuccess), sl.add(shapeName));
+    MObject shape;
+    EXPECT_EQ(MStatus(MS::kSuccess), sl.getDependNode(0, shape));
+    MStatus status;
+    MFnDagNode fn(shape, &status);
+    EXPECT_EQ(MStatus(MS::kSuccess), status);
+
+    // grab ptr to proxy
+    AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
+
+    // force the stage to load
+    EXPECT_EQ(MString(temp_path.c_str()), proxy->filePathPlug().asString());
+
+    auto stage = proxy->getUsdStage();
+
+    // stage should be valid
+    ASSERT_TRUE(stage);
+
+    // world's dirtiest prim should exist!
+    auto dirtyPrim = stage->GetPrimAtPath(dirtiestPrimPath);
+    ASSERT_TRUE(dirtyPrim.IsValid());
+  }
+}
+
+// Test translating a Mesh Prim via the command
+TEST(ManualTranslate, importMeshPrim)
+{
+  AL::usdmaya::nodes::ProxyShape* proxyShape = SetupProxyShapeWithMesh();
+
+  AL::usdmaya::fileio::translators::TranslatorParameters param;
+  param.setForcePrimImport(true);
+
+  SdfPathVector importPaths;
+  SdfPath meshPath("/pSphere1");
+  importPaths.push_back(meshPath);
+  proxyShape->translatePrimPathsIntoMaya(importPaths, SdfPathVector(), param);
+
+  // Select the shape, if it's there, it worked
+  MObjectHandle translatedObject;
+  MStatus s = MGlobal::selectByName("pSphere1Shape");
+  ASSERT_TRUE( s.statusCode() == MStatus::kSuccess);
+}
+
+//// Test translating a Mesh Prim via the command
+TEST(ManualTranslate, roundtripMeshPrim)
+{
+  AL::usdmaya::nodes::ProxyShape* proxyShape = SetupProxyShapeWithMesh();
+  SdfPath meshPath("/pSphere1");
+
+  AL::usdmaya::fileio::translators::TranslatorParameters tp;
+  tp.setForcePrimImport(true);
+
+  // Import Mesh, test that it actually got imported
+  SdfPathVector importPaths;
+  importPaths.push_back(meshPath);
+  proxyShape->translatePrimPathsIntoMaya(importPaths, SdfPathVector(), tp);
+  MStatus s = MGlobal::selectByName("pSphere1Shape");
+  ASSERT_TRUE(s.statusCode() == MStatus::kSuccess);
+
+  // Tear down Mesh
+  SdfPathVector teardownPaths;
+  teardownPaths.push_back(meshPath);
+  proxyShape->translatePrimPathsIntoMaya(SdfPathVector(), teardownPaths, tp);
+  MFileIO::saveAs("/tmp/cats2.ma");
+  s = MGlobal::selectByName("pSphere1Shape");
+  ASSERT_FALSE(s.statusCode() == MStatus::kSuccess);
+
+  // Import Mesh, test that it actually got imported
+  proxyShape->translatePrimPathsIntoMaya(importPaths, SdfPathVector(), tp);
+  s = MGlobal::selectByName("pSphere1Shape");
+  ASSERT_TRUE(s.statusCode() == MStatus::kSuccess);
+}
+
 // void destroyTransformReferences()
 TEST(ProxyShape, destroyTransformReferences)
 {
@@ -1044,6 +1132,106 @@ TEST(ProxyShape, selectedPaths)
 TEST(ProxyShape, findExcludedGeometry)
 {
   AL_USDMAYA_UNTESTED;
+}
+
+
+namespace
+{
+
+bool prepareBootstrapUSDA(MString &dirString, MString &bootstrapFullPath)
+{
+  dirString = "/tmp/usdMayaEmptyScene";
+
+  MStatus stats = MCommonSystemUtils::makeDirectory(dirString);
+  if(!stats)
+    return false;
+
+  constexpr char content[] = "#usda 1.0";
+  bootstrapFullPath = (dirString + "/bootstrap.usda");
+
+  std::ofstream fileObj;
+  fileObj.open(bootstrapFullPath.asChar(), std::ios::out);
+  if (fileObj.is_open())
+  {
+    fileObj << content;
+    fileObj.close();
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
+
+void checkStageAndRootLayer(UsdStageRefPtr stage, const MString &expectedPath)
+{
+  ASSERT_TRUE(stage);
+
+  SdfLayerHandle root = stage->GetRootLayer();
+  EXPECT_TRUE(root);
+
+  // make sure path is correct
+  EXPECT_EQ(root->GetRealPath(), expectedPath.asChar());
+}
+}
+
+
+// void resolveRelativePathWithinMayaContext();
+TEST(ProxyShape, relativePathSupport)
+{
+  MString tempDirString, bootstrapFullPath;
+  EXPECT_TRUE(prepareBootstrapUSDA(tempDirString, bootstrapFullPath));
+
+
+  // Test the relative USD bootstrap file path support:
+  MFileIO::newFile(true);
+  MStatus status;
+
+  MFnDagNode fn;
+  MObject xform = fn.create("transform");
+  MObject shape = fn.create("AL_usdmaya_ProxyShape", xform);
+
+  // Test it right away:
+  AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
+  // force the stage to load
+  proxy->filePathPlug().setString("./bootstrap.usda");
+
+  // Before testing we need to save the maya scene first, since the relative path is resolved
+  // primarily with current maya scene directory.
+  MString mayaFileName = tempDirString + "/emptyscene.ma";
+  EXPECT_EQ(MStatus(MS::kSuccess), MFileIO::saveAs(mayaFileName, NULL, true));
+
+
+  // Now, reopen maya scene and test again:
+  MFileIO::newFile(true);
+  MFileIO::open(mayaFileName, NULL, true);
+
+  UsdStageCache &cache = AL::usdmaya::StageCache::Get();
+  std::vector<UsdStageRefPtr> stages = cache.GetAllStages();
+  EXPECT_TRUE(not stages.empty());
+
+  auto stage = stages[0];
+  checkStageAndRootLayer(stage, bootstrapFullPath);
+
+
+  // If the proxy shape is not referenced, the relative file path will be resolved using the referenced
+  // maya scene directory:
+  MFileIO::newFile(true);
+  EXPECT_EQ(MStatus(MS::kSuccess), MFileIO::reference(mayaFileName, false, false, "ref"));
+
+  MString outerFileName = "/tmp/usdMayaTestRefEmptyScene.ma";
+  EXPECT_EQ(MStatus(MS::kSuccess), MFileIO::saveAs(outerFileName, NULL, true));
+
+  // Now, reopen maya scene and test again:
+  MFileIO::newFile(true);
+  MFileIO::open(outerFileName, NULL, true);
+
+  cache = AL::usdmaya::StageCache::Get();
+  stages = cache.GetAllStages();
+  EXPECT_TRUE(not stages.empty());
+
+  stage = stages[0];
+  checkStageAndRootLayer(stage, bootstrapFullPath);
 }
 
 //

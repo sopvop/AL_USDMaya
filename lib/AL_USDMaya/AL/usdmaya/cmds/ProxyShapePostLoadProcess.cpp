@@ -13,8 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/maya/CodeTimings.h"
-#include "AL/usdmaya/Utils.h"
+#include "AL/usdmaya/CodeTimings.h"
 #include "AL/usdmaya/Metadata.h"
 #include "AL/usdmaya/StageData.h"
 #include "AL/usdmaya/DebugCodes.h"
@@ -24,8 +23,8 @@
 #include "AL/usdmaya/fileio/NodeFactory.h"
 #include "AL/usdmaya/fileio/SchemaPrims.h"
 #include "AL/usdmaya/fileio/TransformIterator.h"
+#include "AL/usdmaya/fileio/translators/TranslatorContext.h"
 
-#include "AL/usdmaya/nodes/Layer.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
 
@@ -42,6 +41,7 @@
 #include "maya/MSelectionList.h"
 #include "maya/MString.h"
 #include "maya/MSyntax.h"
+#include "maya/MObjectHandle.h"
 
 #include <pxr/base/tf/type.h>
 #include <pxr/base/vt/dictionary.h>
@@ -51,6 +51,7 @@
 
 #include <map>
 #include <string>
+#include "AL/usdmaya/utils/Utils.h"
 
 namespace AL {
 namespace usdmaya {
@@ -138,17 +139,23 @@ void huntForNativeNodes(
     const MDagPath& proxyTransformPath,
     std::vector<UsdPrim>& schemaPrims,
     std::vector<ImportCallback>& postCallBacks,
-    UsdStageRefPtr stage,
-    fileio::translators::TranslatorManufacture& manufacture)
+    nodes::ProxyShape& proxy)
 {
+
+  UsdStageRefPtr stage = proxy.getUsdStage();
+  fileio::translators::TranslatorManufacture& manufacture = proxy.translatorManufacture();
+
   fileio::SchemaPrimsUtils utils(manufacture);
   TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("huntForNativeNodes::huntForNativeNodes\n");
   fileio::TransformIterator it(stage, proxyTransformPath);
   for(; !it.done(); it.next())
   {
     UsdPrim prim = it.prim();
-    TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("huntForNativeNodes: %s\n", prim.GetName().GetText());
-    if(utils.isSchemaPrim(prim))
+    TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("huntForNativeNodes: PrimName %s\n", prim.GetName().GetText());
+
+    // If the prim isn't importable by default then don't add it to the list
+    fileio::translators::TranslatorRefPtr t = utils.isSchemaPrim(prim);
+    if(t && t->importableByDefault())
     {
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::huntForNativeNodes found matching schema %s\n", prim.GetPath().GetText());
       schemaPrims.push_back(prim);
@@ -174,173 +181,6 @@ void huntForNativeNodes(
         postCallBacks.push_back(importCallback);
       }
     }
-  }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-MObject makeLayerNode(SdfLayerHandle layer, LayerToObjectMap& layerToObjectMap, nodes::ProxyShape* proxyShape)
-{
-  LAYER_HANDLE_CHECK(layer);
-  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapePostLoadProcess::makeLayerNode %s\n", layer->GetDisplayName().c_str());
-  MFnDependencyNode fn;
-  MObject layerNode = fn.create(nodes::Layer::kTypeId);
-
-
-  UsdStageRefPtr stage = proxyShape->getUsdStage();
-  MString layerName;
-
-  if(!layer->IsAnonymous())
-  {
-    layerName = nodes::Layer::toMayaNodeName(layer->GetDisplayName());
-  }
-  else if(stage->GetSessionLayer() == layer)
-  {
-    layerName = MString("session_layer_usda");
-  }
-  else
-  {
-    layerName =  AL::usdmaya::convert(layer->GetIdentifier()); // Assuming Anonymous' layer, use identifier because it has no display name.
-  }
-
-  fn.setName(layerName);
-
-  // construct map from sdf layer, to the maya node for that layer
-  layerToObjectMap.insert(std::make_pair(layer, layerNode));
-
-  nodes::Layer* layerObject = (nodes::Layer*)fn.userNode();
-  layerObject->init(proxyShape, layer);
-  return layerNode;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void buildLayerTree(MObject layerNode, const SdfLayerHandle& layer, LayerMap& layerMap, LayerToObjectMap& layersToObjects, MDGModifier& modifier, nodes::ProxyShape* proxyShape)
-{
-  LAYER_HANDLE_CHECK(layer);
-  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapePostLoadProcess::buildLayerTree %s\n", layer->GetDisplayName().c_str());
-  {
-    // first attempt to create any sub layers that are connected to the input layer
-    SdfSubLayerProxy subLayers = layer->GetSubLayerPaths();
-
-    if(!subLayers.empty())
-    {
-      MPlug subLayersPlug(layerNode, nodes::Layer::subLayers());
-      subLayersPlug.setNumElements(subLayers.size());
-      uint32_t currChild = 0;
-
-      // build up nodes for each of the sub layers
-      for(auto it = subLayers.begin(); it != subLayers.end(); ++it, ++currChild)
-      {
-        const std::string& name = *it;
-        SdfLayerHandle subLayerHandle = SdfLayer::Find(name);
-        if(subLayerHandle)
-        {
-          // construct the node
-          MObject newLayer = makeLayerNode(subLayerHandle, layersToObjects, proxyShape);
-
-          // connect to its parent layer
-          MPlug plug(newLayer, nodes::Layer::parentLayer());
-          if(!modifier.connect(subLayersPlug.elementByLogicalIndex(currChild), plug))
-          {
-            std::cerr << "Error: connection not made to sublayer " << subLayerHandle->GetDisplayName() << std::endl;
-          }
-
-          // recurse because sublayers can themselves contain sublayers.
-          buildLayerTree(newLayer, subLayerHandle, layerMap, layersToObjects, modifier, proxyShape);
-        }
-      }
-    }
-  }
-
-  auto iter = layerMap.find(layer);
-
-  // figure out how many child layers we have on this layer
-  MPlug childLayersPlug(layerNode, nodes::Layer::childLayers());
-  uint32_t numElements = childLayersPlug.numElements();
-  uint32_t count = numElements;
-  for(auto it = iter->second.begin(); it != iter->second.end(); ++it)
-  {
-    if(layersToObjects.find(*it) == layersToObjects.end())
-    {
-      ++numElements;
-    }
-  }
-
-  // resize for fun.
-  childLayersPlug.setNumElements(numElements);
-
-  // create the remaining child layers
-  for(auto it = iter->second.begin(); it != iter->second.end(); ++it)
-  {
-    if(layersToObjects.find(*it) == layersToObjects.end())
-    {
-      MObject newLayer = makeLayerNode(*it, layersToObjects, proxyShape);
-      MPlug plug(newLayer, nodes::Layer::parentLayer());
-      modifier.connect(childLayersPlug.elementByLogicalIndex(count++), plug);
-
-      buildLayerTree(newLayer, *it, layerMap, layersToObjects, modifier, proxyShape);
-    }
-
-  }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void constructLayers(MObject proxyNode, nodes::ProxyShape* shape, UsdStageRefPtr stage, bool include_assets = false)
-{
-  if(!stage)
-    return;
-
-  if(!shape)
-    return;
-
-  LayerMap layerMap;
-  SdfLayerHandleVector layers = stage->GetUsedLayers();
-  SdfLayerHandle previous;
-  SdfLayerHandle first;
-  SdfLayerHandleVector layerStack = stage->GetLayerStack(true);
-
-
-  for(auto it = layerStack.begin(); it != layerStack.end(); ++it)
-  {
-    SdfLayerHandle handle = *it;
-    if(handle)
-    {
-      if(!previous)
-      {
-        first = handle;
-      }
-
-      // first see whether previous exists in the map.
-      // If it does add this handle as a child of the previous
-      {
-        auto iter = layerMap.find(previous);
-        if(iter != layerMap.end())
-        {
-          iter->second.insert(handle);
-        }
-      }
-
-      // now build the tree from this layer
-      buildTree(handle, layerMap, layers);
-      previous = handle;
-    }
-  }
-
-  MDGModifier modifier;
-  if(first)
-  {
-    LayerToObjectMap layersToObjects;
-    MObject layerNode = makeLayerNode(first, layersToObjects, shape);
-
-    // connect highest level layer to the proxy shape.
-    modifier.connect(proxyNode, nodes::ProxyShape::layers(), layerNode, nodes::Layer::proxyShape());
-
-    // now prcoess the rest of the nodes.
-    buildLayerTree(layerNode, first, layerMap, layersToObjects, modifier, shape);
-  }
-
-  if(!modifier.doIt())
-  {
-    std::cout << "Failed to connect layers to proxy shape" << std::endl;
   }
 }
 
@@ -403,7 +243,8 @@ void ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims(
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShapePostLoadProcess::createSchemaPrims(
     nodes::ProxyShape* proxy,
-    const std::vector<UsdPrim>& objsToCreate)
+    const std::vector<UsdPrim>& objsToCreate,
+    const fileio::translators::TranslatorParameters& param)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::createSchemaPrims\n");
   AL_BEGIN_PROFILE_SECTION(CreatePrims);
@@ -425,7 +266,7 @@ void ProxyShapePostLoadProcess::createSchemaPrims(
       //if(!context->hasEntry(prim.GetPath(), prim.GetTypeName()))
       {
         AL_BEGIN_PROFILE_SECTION(SchemaPrims);
-        if(!fileio::importSchemaPrim(prim, object, 0, context, translator))
+        if(!fileio::importSchemaPrim(prim, object, 0, context, translator, param))
         {
           std::cerr << "Error: unable to load schema prim node: '" << prim.GetName().GetString() << "' that has type: '" << prim.GetTypeName() << "'" << std::endl;
         }
@@ -462,10 +303,7 @@ void ProxyShapePostLoadProcess::updateSchemaPrims(
       {
         TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::createSchemaPrims prim=%s hasEntry=false\n", prim.GetPath().GetText());
         AL_BEGIN_PROFILE_SECTION(SchemaPrims);
-        if(!fileio::importSchemaPrim(prim, object, 0, context, translator))
-        {
-          std::cerr << "Error: unable to load schema prim node: '" << prim.GetName().GetString() << "' that has type: '" << prim.GetTypeName() << "'" << std::endl;
-        }
+        fileio::importSchemaPrim(prim, object, 0, context, translator);
         AL_END_PROFILE_SECTION();
       }
       else
@@ -510,6 +348,7 @@ void ProxyShapePostLoadProcess::connectSchemaPrims(
       AL_END_PROFILE_SECTION();
     }
   }
+
   AL_END_PROFILE_SECTION();
 }
 
@@ -517,6 +356,12 @@ void ProxyShapePostLoadProcess::connectSchemaPrims(
 MStatus ProxyShapePostLoadProcess::initialise(nodes::ProxyShape* ptrNode)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::initialise called\n");
+
+  if(!ptrNode)
+  {
+    std::cerr << "ProxyShapePostLoadProcess::initialise Unable to initialise the PostLoadProcess since the ProxyShape ptr is null" << std::endl;
+    return MStatus::kFailure;
+  }
 
   MFnDagNode fn(ptrNode->thisMObject());
   MDagPath proxyTransformPath;
@@ -555,17 +400,17 @@ MStatus ProxyShapePostLoadProcess::initialise(nodes::ProxyShape* ptrNode)
   // iterate over the stage and find all custom schema nodes that have registered translator plugins
   std::vector<UsdPrim> schemaPrims;
   std::vector<ImportCallback> callBacks;
-  UsdStageRefPtr stage = ptrNode->getUsdStage();
+  UsdStageRefPtr stage = ptrNode->usdStage();
   if(stage)
   {
-    huntForNativeNodes(proxyTransformPath, schemaPrims, callBacks, stage, ptrNode->translatorManufacture());
-    constructLayers(fn.object(), ptrNode, stage);
+    huntForNativeNodes(proxyTransformPath, schemaPrims, callBacks, *ptrNode/* stage, ptrNode->translatorManufacture()*/);
   }
   else
   {
     AL_END_PROFILE_SECTION();
-    return MS::kSuccess;
+    return MS::kFailure;
   }
+
   AL_END_PROFILE_SECTION();
 
   // generate the transform chains

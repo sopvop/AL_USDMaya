@@ -29,10 +29,11 @@
 #include "maya/MItDependencyNodes.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
-#include "AL/maya/DgNodeHelper.h"
+#include "AL/usdmaya/utils/DgNodeHelper.h"
 #include "AL/usd/schemas/MayaReference.h"
 #include "AL/usdmaya/DebugCodes.h"
-#include "AL/usdmaya/Utils.h"
+
+#include "AL/usdmaya/utils/Utils.h"
 
 IGNORE_USD_WARNINGS_PUSH
 #include <pxr/usd/usd/attribute.h>
@@ -129,7 +130,7 @@ MStatus MayaReference::import(const UsdPrim& prim, MObject& parent)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReference::import prim=%s\n", prim.GetPath().GetText());
   MStatus status;
-  status = m_mayaReferenceLogic.LoadMayaReference(prim, parent);
+  status = m_mayaReferenceLogic.LoadMayaReference(prim, parent, context());
 
   return status;
 }
@@ -208,7 +209,7 @@ MStatus MayaReferenceLogic::update(const UsdPrim& prim, MObject parent, MObject 
 
       MString command, filepath;
       MFnReference fnReference(refNode);
-      command = MString("referenceQuery -f \"") + fnReference.name() + "\"";
+      command = MString("referenceQuery -f -withoutCopyNumber \"") + fnReference.name() + "\"";
       MGlobal::executeCommand(command, filepath);
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update referenceNode=%s prim=%s execute \"%s\"=%s\n",
 #if MAYA_API_VERSION < 201700
@@ -229,7 +230,6 @@ MStatus MayaReferenceLogic::update(const UsdPrim& prim, MObject parent, MObject 
                                             refNamespace.asChar());
         if(refNamespace != rigNamespace.c_str())
         {
-          command = MString("referenceQuery -f \"") + fnReference.name() + "\"";
           command = "file -e -ns \"";
           command += rigNamespace.c_str();
           command += "\" \"";
@@ -240,7 +240,7 @@ MStatus MayaReferenceLogic::update(const UsdPrim& prim, MObject parent, MObject 
                                               command.asChar());
           if(!MGlobal::executeCommand(command))
           {
-            MGlobal::displayError(MString("Failed to update reference with new namespace: ") + mayaReferencePath);
+            MGlobal::displayError(MString("Failed to update reference with new namespace. refNS:" + refNamespace + "rigNs: " + rigNamespace.c_str() + ": ") + mayaReferencePath);
           }
         }
       }
@@ -287,7 +287,7 @@ MStatus MayaReferenceLogic::update(const UsdPrim& prim, MObject parent, MObject 
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MStatus MayaReferenceLogic::LoadMayaReference(const UsdPrim& prim, MObject& parent) const
+MStatus MayaReferenceLogic::LoadMayaReference(const UsdPrim& prim, MObject& parent, TranslatorContextPtr context) const
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::LoadMayaReference prim=%s\n", prim.GetPath().GetText());
   const TfToken maya_associatedReferenceNode("maya_associatedReferenceNode");
@@ -394,10 +394,11 @@ MStatus MayaReferenceLogic::LoadMayaReference(const UsdPrim& prim, MObject& pare
   // Now load the reference to properly trigger the kAfterReferenceLoad callback
   MFileIO::loadReferenceByNode(referenceObject, &status);
   AL_MAYA_CHECK_ERROR(status, MString("failed to load reference: ") + referenceCommand);
-
   {
-    UsdAttribute attr = prim.CreateAttribute(maya_associatedReferenceNode, SdfValueTypeNames->String, true);
-    attr.Set<std::string>(std::string(refDependNode.name().asChar(), refDependNode.name().length()));
+    // To avoid the error that USD complains about editing to same layer simultaneously from different threads,
+    // we record it as custom data instead of creating an attribute.
+    VtValue value(AL::maya::utils::convert(refDependNode.name()));
+    prim.SetCustomDataByKey(maya_associatedReferenceNode, value);
   }
 
   // Add attribute to the reference node to track the namespace the prim was
@@ -422,11 +423,11 @@ MStatus MayaReferenceLogic::LoadMayaReference(const UsdPrim& prim, MObject& pare
 
   if (status == MS::kSuccess)
   {
-      MDGModifier attrMod;
-      status = attrMod.newPlugValueString(MPlug(referenceObject, primNSAttr), rigNamespaceM);
-      AL_MAYA_CHECK_ERROR(status, "failed to set usdPrimPath attr on reference node");
-      status = attrMod.doIt();
-      AL_MAYA_CHECK_ERROR(status, "failed to execute reference attr modifier");
+    MDGModifier attrMod;
+    status = attrMod.newPlugValueString(MPlug(referenceObject, primNSAttr), rigNamespaceM);
+    AL_MAYA_CHECK_ERROR(status, "failed to set usdPrimPath attr on reference node");
+    status = attrMod.doIt();
+    AL_MAYA_CHECK_ERROR(status, "failed to execute reference attr modifier");
   }
 
   return MS::kSuccess;

@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #pragma once
+#include <AL/usdmaya/ForwardDeclares.h>
 #include "AL/usdmaya/fileio/translators/DagNodeTranslator.h"
 
 #include "maya/MObject.h"
@@ -81,14 +82,6 @@ public:
   /// \return true if prefixed with 'alusd_'
   bool attributeHandled(const UsdAttribute& usdAttr) override;
 };
-
-void zipUVs(const float* u, const float* v, float* uv, const size_t count);
-void unzipUVs(const float* const uv, float* const u, float* const v, const size_t count);
-void convert3DArrayTo4DArray(const float* const input, float* const output, size_t count);
-void convertFloatVec3ArrayToDoubleVec3Array(const float* const input, double* const output, size_t count);
-void interleaveIndexedUvData(float* output, const float* u, const float* v, const int32_t* indices, const uint32_t numIndices);
-bool isUvSetDataSparse(const int32_t* uvCounts, const uint32_t count);
-void generateIncrementingIndices(MIntArray& indices, const size_t count);
 
 //----------------------------------------------------------------------------------------------------------------------
 } // translators
