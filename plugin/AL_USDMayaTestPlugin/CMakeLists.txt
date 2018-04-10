@@ -14,6 +14,7 @@ list(APPEND AL_maya_test_headers
 
 list(APPEND AL_maya_test_source
         AL/UnitTestHarness.cpp
+        AL/maya/test_DiffCore.cpp
         AL/maya/test_EventHandler.cpp
         AL/maya/test_MayaEventManager.cpp
         AL/usdmaya/commands/test_ImportCommands.cpp
@@ -27,6 +28,7 @@ list(APPEND AL_maya_test_source
         AL/usdmaya/fileio/export_ik.cpp
         AL/usdmaya/fileio/export_lattice.cpp
         AL/usdmaya/fileio/export_nonlinear.cpp
+        AL/usdmaya/fileio/export_unmerged.cpp
         AL/usdmaya/nodes/test_ActiveInactive.cpp
         AL/usdmaya/nodes/test_LayerManager.cpp
         AL/usdmaya/nodes/test_ProxyShape.cpp
@@ -37,6 +39,8 @@ list(APPEND AL_maya_test_source
         AL/usdmaya/nodes/proxy/test_DrivenTransforms.cpp
         AL/usdmaya/nodes/proxy/test_PrimFilter.cpp
         AL/usdmaya/test_SelectabilityDB.cpp
+        AL/usdmaya/test_DiffPrimVar.cpp
+        AL/usdmaya/commands/test_TranslateCommand.cpp
         test_translators_AnimationTranslator.cpp
         test_translators_CameraTranslator.cpp
         test_translators_DgTranslator.cpp

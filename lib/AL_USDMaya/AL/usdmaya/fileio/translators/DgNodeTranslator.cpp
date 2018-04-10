@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #include "AL/maya/utils/NodeHelper.h"
-#include "AL/usdmaya/utils/SIMD.h"
+#include "AL/usd/utils/SIMD.h"
 #include "AL/usdmaya/fileio/ExportParams.h"
 #include "AL/usdmaya/fileio/ImportParams.h"
 #include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
@@ -935,6 +935,7 @@ MStatus DgNodeTranslator::copyDynamicAttributes(MObject node, UsdPrim& prim)
     if(isDynamic)
     {
       TfToken attributeName = TfToken(plug.partialName(false, false, false, false, false, true).asChar());
+
       // first test if the attribute happen to come with the prim by nature and we have a mapping rule for it:
       if(prim.HasAttribute(attributeName))
       {

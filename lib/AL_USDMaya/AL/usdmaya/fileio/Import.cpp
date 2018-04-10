@@ -138,14 +138,31 @@ void Import::doImport()
       const UsdPrim& prim = it.prim();
       // fallback in cases where either the node is NOT an assembly, or the attempt to load the
       // assembly failed.
+      bool parentUnmerged = false;
+      TfToken val;
+      if(prim.GetParent().GetMetadata(AL::usdmaya::Metadata::mergedTransform, &val))
+      {
+        parentUnmerged = (val == AL::usdmaya::Metadata::unmerged);
+      }
+
       {
         if(prim.GetTypeName() == "Mesh")
         {
           AL_BEGIN_PROFILE_SECTION(ImportingMesh);
-          MObject obj = createParentTransform(prim, it);
+          MObject obj;
+
+          if(!parentUnmerged)
+          {
+            obj = createParentTransform(prim, it);
+          }
+          else
+          {
+            obj = it.parent();
+          }
+
           if(m_params.m_meshes)
           {
-            MObject mesh = factory.createNode(prim, "mesh", obj);
+            MObject mesh = factory.createNode(prim, "mesh", obj, parentUnmerged);
             MFnTransform fnP(obj);
             fnP.addChild(mesh, MFnTransform::kNextPos, true);
           }
@@ -158,7 +175,7 @@ void Import::doImport()
           MObject obj = createParentTransform(prim, it);
           if(m_params.m_nurbsCurves)
           {
-            MObject mesh = factory.createNode(prim, "nurbsCurve", obj);
+            MObject mesh = factory.createNode(prim, "nurbsCurve", obj, parentUnmerged);
             MFnTransform fnP(obj);
             fnP.addChild(mesh, MFnTransform::kNextPos, true);
           }
@@ -234,6 +251,11 @@ MStatus ImportCommand::doIt(const MArgList& args)
     }
   }
 
+  if(argData.isFlagSet("-un", &status))
+  {
+    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("-un", 0, m_params.m_stageUnloaded), "ImportCommand: Unable to fetch \"unloaded\" argument")
+  }
+
   if(argData.isFlagSet("-a", &status))
   {
     AL_MAYA_CHECK_ERROR(argData.getFlagArgument("-a", 0, m_params.m_animations), "ImportCommand: Unable to fetch \"animation\" argument");
@@ -278,6 +300,7 @@ MSyntax ImportCommand::createSyntax()
   MSyntax syntax;
   AL_MAYA_CHECK_ERROR2(syntax.addFlag("-a", "-anim"), errorString);
   AL_MAYA_CHECK_ERROR2(syntax.addFlag("-f", "-file", MSyntax::kString), errorString);
+  AL_MAYA_CHECK_ERROR2(syntax.addFlag("-un", "-unloaded", MSyntax::kBoolean), errorString);
   AL_MAYA_CHECK_ERROR2(syntax.addFlag("-p", "-parent", MSyntax::kString), errorString);
   AL_MAYA_CHECK_ERROR2(syntax.addFlag("-da", "-dynamicAttribute", MSyntax::kBoolean), errorString);
   AL_MAYA_CHECK_ERROR2(syntax.addFlag("-m", "-meshes", MSyntax::kBoolean), errorString);

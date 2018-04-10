@@ -497,8 +497,8 @@ private:
   MStatus setRotateOrientation(const MEulerRotation &euler, MSpace::Space = MSpace::kTransform, bool balance = true) override;
 
   //  Compute matrix result
-  MMatrix asMatrix() const;
-  MMatrix asMatrix(double percent) const;
+  MMatrix asMatrix() const override;
+  MMatrix asMatrix(double percent) const override;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

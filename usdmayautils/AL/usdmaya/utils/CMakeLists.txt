@@ -14,12 +14,15 @@ list(APPEND usdmaya_utils_headers
     DgNodeHelper.h
     Utils.h
     ForwardDeclares.h
-    SIMD.h
+    MeshUtils.h
+    DiffPrimVar.h
 )
 
 list(APPEND usdmaya_utils_source
     DgNodeHelper.cpp
     Utils.cpp
+    MeshUtils.cpp
+    DiffPrimVar.cpp
 )
 
 add_library(${USDMAYA_UTILS_LIBRARY_NAME}
@@ -39,8 +42,6 @@ target_link_libraries(${USDMAYA_UTILS_LIBRARY_NAME}
   usd
   usdGeom
   usdUtils
-  usdImaging
-  usdImagingGL
   vt
   rt
   ${Boost_PYTHON_LIBRARY}

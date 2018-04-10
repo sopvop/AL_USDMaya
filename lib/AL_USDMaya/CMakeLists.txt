@@ -13,7 +13,7 @@ list(APPEND AL_usdmaya_headers
         AL/usdmaya/StageData.h
         AL/usdmaya/TypeIDs.h
         AL/usdmaya/ForwardDeclares.h
-        AL/usdmaya/Global.cpp
+        AL/usdmaya/Global.h
 )
 
 list(APPEND AL_usdmaya_source
@@ -130,6 +130,7 @@ list(APPEND AL_usdmaya_public_headers
         ${AL_usdmaya_fileio_translators_headers}
 )
 
+
 # For maya versions above 2016, we can use cmake import targets.
 if(${MAYA_API_VERSION} STRLESS 2017)
     find_library(QTGUI_LIBRARY
@@ -164,7 +165,7 @@ target_include_directories(
 )
 
 target_link_libraries(${LIBRARY_NAME}
-    AL_Utils
+    AL_EventSystem
     AL_USDMayaUtils
     AL_MayaUtils
     AL_USDUtils
@@ -192,6 +193,12 @@ target_link_libraries(${LIBRARY_NAME}
     ${MAYA_OpenMaya_LIBRARY}
     ${MAYA_OpenMayaRender_LIBRARY}
 )
+
+if(NEED_BOOST_FILESYSTEM)
+    target_link_libraries(${LIBRARY_NAME}
+                        ${Boost_FILESYSTEM_LIBRARY})
+endif()
+
 
 if(${MAYA_API_VERSION} STRGREATER 2017)
     target_link_libraries(${LIBRARY_NAME}

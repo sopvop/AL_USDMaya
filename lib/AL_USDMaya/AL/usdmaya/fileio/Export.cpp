@@ -20,6 +20,7 @@
 #include "AL/usdmaya/fileio/translators/MeshTranslator.h"
 #include "AL/usdmaya/fileio/translators/NurbsCurveTranslator.h"
 #include "AL/usdmaya/fileio/translators/TransformTranslator.h"
+#include "AL/usdmaya/Metadata.h"
 
 #include "maya/MAnimControl.h"
 #include "maya/MAnimUtil.h"
@@ -472,6 +473,8 @@ void Export::exportIkChain(MDagPath effectorPath, const SdfPath& usdPath)
                 added = true;
                 animTranslator->forceAddPlug(rotatePlug, op.GetAttr(), radToDeg);
                 break;
+              default:
+                break;
               }
               if(added) break;
             }
@@ -540,7 +543,10 @@ void Export::exportShapesCommonProc(MDagPath shapePath, MFnTransform& fnTransfor
     transformPrim = xform.GetPrim();
   }
 
-  copyTransformParams(transformPrim, fnTransform);
+  if(m_params.m_mergeTransforms)
+  {
+    copyTransformParams(transformPrim, fnTransform);
+  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -655,6 +661,14 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
       // how many shapes are directly under this transform path?
       uint32_t numShapes;
       transformPath.numberOfShapesDirectlyBelow(numShapes);
+
+      if(!m_params.m_mergeTransforms)
+      {
+        exportTransformFunc(transformPath, fnTransform, usdPath);
+        UsdPrim prim = m_impl->stage()->GetPrimAtPath(usdPath);
+        prim.SetMetadata<TfToken>(AL::usdmaya::Metadata::mergedTransform, AL::usdmaya::Metadata::unmerged);
+      }
+
       if(numShapes)
       {
         // This is a slight annoyance about the way that USD has no concept of
@@ -666,6 +680,12 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
         {
           MDagPath shapePath = transformPath;
           shapePath.extendToShapeDirectlyBelow(j);
+
+          if(!m_params.m_mergeTransforms)
+          {
+            fnTransform.setObject(shapePath);
+            usdPath = makeUsdPath(parentPath, shapePath);
+          }
 
           bool shapeNotYetExported = !m_impl->contains(shapePath.node());
           if(shapeNotYetExported || m_params.m_duplicateInstances)
@@ -687,7 +707,10 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
       }
       else
       {
-        exportTransformFunc(transformPath, fnTransform, usdPath);
+        if(m_params.m_mergeTransforms)
+        {
+          exportTransformFunc(transformPath, fnTransform, usdPath);
+        }
       }
     }
     else
@@ -716,6 +739,7 @@ void Export::doExport()
   MObjectArray objects;
   const MSelectionList& sl = m_params.m_nodes;
   SdfPath defaultPrim;
+
   for(uint32_t i = 0, n = sl.length(); i < n; ++i)
   {
     MDagPath path;
@@ -814,22 +838,27 @@ MStatus ExportCommand::doIt(const MArgList& args)
   {
     AL_MAYA_CHECK_ERROR(argData.getFlagArgument("nc", 0, m_params.m_nurbsCurves), "ALUSDExport: Unable to fetch \"nurbs curves\" argument");
   }
+
   if(argData.isFlagSet("fr", &status))
   {
     AL_MAYA_CHECK_ERROR(argData.getFlagArgument("fr", 0, m_params.m_minFrame), "ALUSDExport: Unable to fetch \"frame range\" argument");
     AL_MAYA_CHECK_ERROR(argData.getFlagArgument("fr", 1, m_params.m_maxFrame), "ALUSDExport: Unable to fetch \"frame range\" argument");
     m_params.m_animation = true;
   }
-  else
-  if(argData.isFlagSet("ani", &status))
+  else if(argData.isFlagSet("ani", &status))
   {
     m_params.m_animation = true;
     m_params.m_minFrame = MAnimControl::minTime().value();
     m_params.m_maxFrame = MAnimControl::maxTime().value();
   }
+
   if (argData.isFlagSet("fs", &status))
   {
     AL_MAYA_CHECK_ERROR(argData.getFlagArgument("fs", 0, m_params.m_filterSample), "ALUSDExport: Unable to fetch \"filter sample\" argument");
+  }
+  if(argData.isFlagSet("eac", &status))
+  {
+    AL_MAYA_CHECK_ERROR(argData.getFlagArgument("eac", 0, m_params.m_extensiveAnimationCheck), "ALUSDExport: Unable to fetch \"extensive animation check\" argument");
   }
 
   if(m_params.m_animation)
@@ -916,6 +945,8 @@ MSyntax ExportCommand::createSyntax()
   status = syntax.addFlag("-fr", "-frameRange", MSyntax::kDouble, MSyntax::kDouble);
   AL_MAYA_CHECK_ERROR2(status, errorString);
   status = syntax.addFlag("-fs", "-filterSample", MSyntax::kBoolean);
+  AL_MAYA_CHECK_ERROR2(status, errorString);
+  status = syntax.addFlag("-eac", "-extensiveAnimationCheck", MSyntax::kBoolean);
   AL_MAYA_CHECK_ERROR2(status, errorString);
   syntax.enableQuery(false);
   syntax.enableEdit(false);
