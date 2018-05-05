@@ -569,7 +569,10 @@ bool animationCheck(AnimationTranslator* animTranslator, MPlug plug)
 UsdAttribute addTranslateOp(const UsdGeomXform &xformSchema, TfToken attrName, const GfVec3f &currentValue, bool invert=false)
 {
   UsdGeomXformOp op = xformSchema.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, attrName, invert);
-  op.Set(currentValue);
+  if (!invert)
+  {
+    op.Set(currentValue);
+  }
   return op.GetAttr();
 }
 
