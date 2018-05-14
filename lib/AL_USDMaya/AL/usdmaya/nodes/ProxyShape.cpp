@@ -1228,6 +1228,7 @@ void ProxyShape::loadStage()
   // in case there was already a stage in m_stage, check to see if it's edit target has been altered
   trackEditTargetLayer();
   m_stage = UsdStageRefPtr();
+  m_boundingBoxCache.clear();
 
   // Get input attr values
   const MString file = inputStringValue(dataBlock, m_filePath);
