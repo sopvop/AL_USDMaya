@@ -189,7 +189,7 @@ bool TransformTranslator::getAnimationVariables(const PxrUsdMayaXformOpClassific
   else if (opName == PxrUsdMayaXformStackTokens->pivotTranslate)
   {
     attributes.append(m_rotatePivotTranslate);
-    attributes.append(m_rotatePivotTranslate);
+    attributes.append(m_scalePivotTranslate);
   }
   else if (opName == PxrUsdMayaXformStackTokens->pivot)
   {
