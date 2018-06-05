@@ -21,6 +21,7 @@
 #include "AL/maya/utils/MayaHelperMacros.h"
 #include "maya/MPxTransform.h"
 
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace AL {
 namespace usdmaya {
