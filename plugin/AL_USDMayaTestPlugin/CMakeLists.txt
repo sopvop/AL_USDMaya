@@ -1,8 +1,3 @@
-IF(DEFINED NO_TESTS AND NO_TESTS)
-  message("Skipping building of test plugin.")
-  return()
-ENDIF()
-
 find_package(GTest REQUIRED)
 
 set(PXR_PACKAGE AL_USDMayaTestPlugin)
@@ -13,6 +8,7 @@ list(APPEND AL_maya_test_headers
 )
 
 list(APPEND AL_maya_test_source
+        plugin.cpp
         AL/UnitTestHarness.cpp
         AL/maya/test_DiffCore.cpp
         AL/maya/test_EventHandler.cpp
@@ -23,9 +19,11 @@ list(APPEND AL_maya_test_source
         AL/usdmaya/commands/test_ProxyShapeSelect.cpp
         AL/usdmaya/commands/test_InternalProxySelection.cpp
         AL/usdmaya/commands/test_ProxyShapeImport.cpp
+        AL/usdmaya/commands/test_LayerManagerCommands.cpp
         AL/usdmaya/fileio/export_blendshape.cpp
         AL/usdmaya/fileio/export_constraints.cpp
         AL/usdmaya/fileio/export_ik.cpp
+        AL/usdmaya/fileio/export_import_instancing.cpp
         AL/usdmaya/fileio/export_lattice.cpp
         AL/usdmaya/fileio/export_nonlinear.cpp
         AL/usdmaya/fileio/export_unmerged.cpp
@@ -52,30 +50,48 @@ list(APPEND AL_maya_test_source
         test_usdmaya.cpp
 )
 
-add_definitions(-DAL_USDMAYA_TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/test_data")
+add_library(${PXR_PACKAGE} ${AL_maya_test_source})
 
-add_definitions(
-    -DAL_USDMAYA_UNITTEST
+target_compile_definitions(${PXR_PACKAGE}
+PRIVATE
+    AL_USDMAYA_UNITTEST
+    AL_USDMAYATEST_PLUGIN_EXPORT
+    AL_USDMAYA_TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/test_data"
 )
 
-pxr_plugin(${PXR_PACKAGE}
-    LIBRARIES
-        ar
-        arch
-        AL_USDMaya
-        usdImaging
-        usdImagingGL
-        ${GTEST_LIBRARIES}
-        ${MAYA_LIBRARIES}
+target_link_libraries(${PXR_PACKAGE}
+    AL_EventSystem
+    AL_USDMayaUtils
+    AL_MayaUtils
+    AL_USDUtils
+    AL_USDMaya
+    ${GTEST_LIBRARIES}
+    ${MAYA_LIBRARIES}
+)
 
-    INCLUDE_DIRS
-        ${GTEST_INCLUDE_DIRS}
-        ${MAYA_INCLUDE_DIRS}
-        "../../lib/AL_USDMaya"
+target_include_directories(${PXR_PACKAGE}
+PRIVATE
+    ${GTEST_INCLUDE_DIRS}
+    ${MAYA_INCLUDE_DIRS}
+    "../../lib/AL_USDMaya"    
+)
 
-    CPPFILES
-        ${AL_maya_test_source}
-        plugin.cpp
+if(MSVC)
+    set_target_properties(${PXR_PACKAGE} PROPERTIES SUFFIX ".mll")
+else()
+    set_target_properties(${PXR_PACKAGE}
+        PROPERTIES
+            PREFIX ""
+            INSTALL_RPATH "$ORIGIN:$ORIGIN/../lib"
+    )
+endif()
+
+install(TARGETS
+    ${PXR_PACKAGE}
+    LIBRARY
+        DESTINATION plugin
+    RUNTIME
+        DESTINATION plugin
 )
 
 add_test(

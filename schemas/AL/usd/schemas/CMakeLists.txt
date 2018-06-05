@@ -70,9 +70,12 @@ add_library(${SCHEMAS_PACKAGE}
     ${CMAKE_CURRENT_BINARY_DIR}/ModuleDeps.cpp
 )
 
-set_target_properties(${SCHEMAS_PACKAGE}
-    PROPERTIES COMPILE_DEFINITIONS 
-        "MFB_PACKAGE_NAME=${SCHEMAS_PACKAGE};MFB_ALT_PACKAGE_NAME=${SCHEMAS_PACKAGE};MFB_PACKAGE_MODULE=${SCHEMAS_PYTHON_MODULE}"
+target_compile_definitions(${SCHEMAS_PACKAGE}
+    PRIVATE
+        MFB_PACKAGE_NAME=${SCHEMAS_PACKAGE}
+        MFB_ALT_PACKAGE_NAME=${SCHEMAS_PACKAGE}
+        MFB_PACKAGE_MODULE=${SCHEMAS_PYTHON_MODULE}
+        AL_USDMAYASCHEMAS_EXPORTS
 )
 
 target_link_libraries(${SCHEMAS_PACKAGE} ${DEPENDANT_LIBRARIES})
@@ -80,6 +83,8 @@ target_link_libraries(${SCHEMAS_PACKAGE} ${DEPENDANT_LIBRARIES})
 install(
     TARGETS ${SCHEMAS_PACKAGE}
     LIBRARY
+    DESTINATION ${library_install_path}
+    RUNTIME
     DESTINATION ${library_install_path}
 )
 
@@ -100,9 +105,11 @@ add_library(${SCHEMAS_PYTHON_PACKAGE}
     wrapTokens.cpp
 )
 
-set_target_properties(${SCHEMAS_PYTHON_PACKAGE}
-    PROPERTIES COMPILE_DEFINITIONS
-        "MFB_PACKAGE_NAME=${SCHEMAS_PACKAGE};MFB_ALT_PACKAGE_NAME=${SCHEMAS_PACKAGE};MFB_PACKAGE_MODULE=${PYTHON_MODULE}"
+target_compile_definitions(${SCHEMAS_PYTHON_PACKAGE}
+    PRIVATE
+        MFB_PACKAGE_NAME=${SCHEMAS_PACKAGE}
+        MFB_ALT_PACKAGE_NAME=${SCHEMAS_PACKAGE}
+        MFB_PACKAGE_MODULE=${SCHEMAS_PYTHON_MODULE}
 )
 
 set_target_properties(${SCHEMAS_PYTHON_PACKAGE} 
@@ -110,10 +117,19 @@ set_target_properties(${SCHEMAS_PYTHON_PACKAGE}
         PREFIX ""
 )
 
+if(MSVC)
+set_target_properties(${SCHEMAS_PYTHON_PACKAGE}
+    PROPERTIES
+        SUFFIX ".pyd"
+)
+endif()
+
 target_link_libraries(${SCHEMAS_PYTHON_PACKAGE} ${SCHEMAS_PACKAGE} ${DEPENDANT_LIBRARIES})
 
 install(TARGETS ${SCHEMAS_PYTHON_PACKAGE}
     LIBRARY
+    DESTINATION ${bindings_install_path}
+    RUNTIME
     DESTINATION ${bindings_install_path}
 )
 
@@ -125,6 +141,8 @@ configure_file (
   ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py.in
   ${CMAKE_BINARY_DIR}/${SCHEMAS_PYTHON_PATH}/__init__.py
 )
+
+install(CODE "execute_process(COMMAND python -m compileall ${CMAKE_BINARY_DIR}/${currentPath}/__init__.py )")
 
 string(REPLACE "/" ";" folderHierarchy "${SCHEMAS_PYTHON_PATH}")
 
@@ -157,6 +175,9 @@ install(
     DESTINATION
         ${CMAKE_INSTALL_PREFIX}/lib/python
 )
+
+install(CODE "message(STATUS \"POST INSTALL: Compiling python/pyc for ${CMAKE_INSTALL_PREFIX}/lib/python ... \")")
+install(CODE "execute_process(COMMAND python -m compileall ${CMAKE_INSTALL_PREFIX}/lib/python )")
 
 ####################################################################################################
 # Install public headers

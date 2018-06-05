@@ -1,3 +1,54 @@
+## v0.27.10 (2018-05-07)
+
+### Added
+
++ A new plugin translator (translator/NurbsCurve.cpp) to translate prim between USD and Maya, and write back editing result to USD prim.
+
+### Changed
+
++ Existing static nurbs curve translator re-uses common utils code.
+
+### Fixed
+
++ Windows build
+
+## v0.27.8 (2018-05-02)
+
+### Changed
+
++ ExportCommand will now export time samples for the visibility attribute.
++ ImportCommand will now correctly import time samples for the visibility attribute.
+
+## v0.27.7 (2018-05-01)
+
+### Added
+
++ Experimental Windows support. It has been tested on Windows 7 with Visual Studio 2015 and Maya 2017.
+
+### Removed
+
++ Qt dependency (Thanks to Sebastien Dalgo from Autodesk)
+
+## v0.27.6 (2018-04-13)
+
+### Added
+
++ New attribute "assetResolverConfig" on proxy shape
+* Export creates master geometry prim thus each instance could reference. If transform and mesh nodes are separated by turning off "mergeTransform" option, transform prim will be marked as "instanceable" and fully benefits from usd instancing feature.
+* Import detects shared master geometry prim, ensures maya transform nodes parenting the instancing shape.
+* Layer manager is now serialised on file export
+
+## v0.27.5 (2018-04-10)
+
+### Added
+
++ Add assetResolverConfig string attribute to ProxyShape 
+
+### Changed
+
++ Built against USD-0.8.4
++ Move initialisation of maya event handler from AL_USDMaya library to mayaUtils library
+
 ## v0.27.4 (2018-04-04)
 
 ### Added

@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 #include "AL/usdmaya/fileio/translators/TransformTranslator.h"
-#include "AL/usdmaya/AttributeType.h"
 #include "AL/usdmaya/fileio/ExportParams.h"
+#include "AL/usdmaya/fileio/ImportParams.h"
 #include "AL/usdmaya/fileio/AnimationTranslator.h"
 #include "AL/usdmaya/nodes/Transform.h"
 
@@ -38,6 +38,8 @@
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/xformCommonAPI.h"
+#include "AL/usdmaya/utils/AttributeType.h"
+#include "AL/usdmaya/utils/DgNodeHelper.h"
 #include "AL/usdmaya/utils/Utils.h"
 #include "usdMaya/xformStack.h"
 
@@ -45,6 +47,8 @@ namespace AL {
 namespace usdmaya {
 namespace fileio {
 namespace translators {
+
+
 //----------------------------------------------------------------------------------------------------------------------
 MObject TransformTranslator::m_inheritsTransform = MObject::kNullObj;
 MObject TransformTranslator::m_scale = MObject::kNullObj;
@@ -65,6 +69,7 @@ MObject TransformTranslator::m_scalePivotTranslate = MObject::kNullObj;
 MObject TransformTranslator::m_rotatePivotTranslate = MObject::kNullObj;
 MObject TransformTranslator::m_selectHandle = MObject::kNullObj;
 MObject TransformTranslator::m_transMinusRotatePivot = MObject::kNullObj;
+MObject TransformTranslator::m_visibility = MObject::kNullObj;
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus TransformTranslator::registerType()
@@ -127,6 +132,10 @@ MStatus TransformTranslator::registerType()
   AL_MAYA_CHECK_ERROR(status, errorString);
 
   m_inheritsTransform = nc.attribute("it", &status);
+  AL_MAYA_CHECK_ERROR(status, errorString);
+
+  MNodeClass dagNodeClass("dagNode");
+  m_visibility = dagNodeClass.attribute("visibility", &status);
   AL_MAYA_CHECK_ERROR(status, errorString);
 
   return MS::kSuccess;
@@ -235,7 +244,8 @@ bool TransformTranslator::getAnimationVariables(const PxrUsdMayaXformOpClassific
 //----------------------------------------------------------------------------------------------------------------------
 MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, const ImporterParams& params)
 {
-  static const UsdTimeCode usdTime = UsdTimeCode::EarliestTime();
+  static const UsdTimeCode usdTime = params.m_forceDefaultRead ?
+                                     UsdTimeCode::Default() : UsdTimeCode::EarliestTime();
   const char* const xformError = "ALUSDImport: error creating transform node";
   AL_MAYA_CHECK_ERROR2(DagNodeTranslator::copyAttributes(from, to, params), xformError);
 
@@ -260,12 +270,12 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
       const PxrUsdMayaXformOpClassification& opClass = *opIt;
       const SdfValueTypeName vtn = op.GetTypeName();
 
-      UsdDataType attr_type = getAttributeType(vtn);
+      utils::UsdDataType attr_type = AL::usdmaya::utils::getAttributeType(vtn);
 
       // Import animation (if we have time samples)
       if (op.GetNumTimeSamples())
       {
-        if(attr_type == UsdDataType::kVec3f || attr_type == UsdDataType::kVec3d)
+        if(attr_type == utils::UsdDataType::kVec3f || attr_type == utils::UsdDataType::kVec3d)
         {
           MObjectArray attrObjs;
           double conversionFactor = 1.0;
@@ -287,7 +297,7 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
               AL_MAYA_CHECK_ERROR2(setInt32(to, m_rotateOrder, uint32_t(convertRotationOrder(op.GetOpType()))), xformError);
             }
 
-            if (attr_type == UsdDataType::kVec3f)
+            if (attr_type == utils::UsdDataType::kVec3f)
             {
                 AL_MAYA_CHECK_ERROR2(setVec3Anim<GfVec3f>(to, obj, op, conversionFactor), xformError);
             }
@@ -297,7 +307,7 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
             }
           }
         }
-        else if(attr_type == UsdDataType::kFloat)
+        else if(attr_type == utils::UsdDataType::kFloat)
         {
           MObject attr;
 
@@ -324,12 +334,12 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
             break;
           }
 
-          if (not attr.isNull())
+          if (!attr.isNull())
           {
             setAngleAnim(to, attr, op);
           }
         }
-        else if(attr_type == UsdDataType::kMatrix4d)
+        else if(attr_type == utils::UsdDataType::kMatrix4d)
         {
           if(opClass.GetName() == PxrUsdMayaXformStackTokens->shear)
           {
@@ -344,7 +354,7 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
       // Else if static
       const float degToRad = 3.141592654f / 180.0f;
 
-      if(attr_type == UsdDataType::kVec3f)
+      if(attr_type == utils::UsdDataType::kVec3f)
       {
         GfVec3f value(0);
 
@@ -397,7 +407,7 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
         }
       }
       else
-      if(attr_type == UsdDataType::kVec3d)
+      if(attr_type == utils::UsdDataType::kVec3d)
       {
         GfVec3d value(0);
 
@@ -450,7 +460,7 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
         }
       }
       else
-      if(attr_type == UsdDataType::kFloat)
+      if(attr_type == utils::UsdDataType::kFloat)
       {
         float value = 0;
 
@@ -503,7 +513,7 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
         }
       }
       else
-      if(attr_type == UsdDataType::kMatrix4d)
+      if(attr_type == utils::UsdDataType::kMatrix4d)
       {
         if(opClass.GetName() == PxrUsdMayaXformStackTokens->shear)
         {
@@ -539,6 +549,10 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
   AL_MAYA_CHECK_ERROR2(setBool(to, m_inheritsTransform, !resetsXformStack), xformError);
 
   processMetaData(from, to, params);
+  if (UsdAttribute myAttr = from.GetAttribute(UsdGeomTokens->visibility))
+  {
+    DgNodeHelper::setVisAttrAnim(to, m_visibility, myAttr);
+  }
 
   return MS::kSuccess;
 }
@@ -619,7 +633,6 @@ UsdAttribute addRotateOp(const UsdGeomXform &xformSchema,
 //----------------------------------------------------------------------------------------------------------------------
 MStatus TransformTranslator::copyAttributes(const MObject& from, UsdPrim& to, const ExporterParams& params)
 {
-  static const UsdTimeCode usdTime = UsdTimeCode::EarliestTime();
   UsdGeomXform xformSchema(to);
   GfVec3f scale;
   GfVec3f shear;
@@ -676,8 +689,15 @@ MStatus TransformTranslator::copyAttributes(const MObject& from, UsdPrim& to, co
   if (plugAnimated || visible != defaultVisible)
   {
     UsdAttribute visibleAttr = xformSchema.GetVisibilityAttr();
-    visibleAttr.Set(visible ? UsdGeomTokens->inherited : UsdGeomTokens->invisible);
-    if (plugAnimated && animTranslator) animTranslator->forceAddTransformPlug(MPlug(from, m_visible), visibleAttr);
+
+    if (plugAnimated && animTranslator)
+    {
+      animTranslator->forceAddTransformPlug(MPlug(from, m_visible), visibleAttr);
+    }
+    else
+    {
+      visibleAttr.Set(visible ? UsdGeomTokens->inherited : UsdGeomTokens->invisible);
+    }
   }
 
   plugAnimated = transformAnimated || animationCheck(animTranslator, MPlug(from, m_translation));
@@ -772,12 +792,12 @@ void TransformTranslator::copyAttributeValue(const MPlug& plug, UsdAttribute& us
 {
   MObject node = plug.node();
   MObject attribute = plug.attribute();
-  static const TfToken visToken("visibility");
+  static const TfToken visToken = UsdGeomTokens->visibility;
   if (usdAttr.GetName() == visToken)
   {
     bool value;
     getBool(node, attribute, value);
-    usdAttr.Set(value ? UsdGeomTokens->inherited : UsdGeomTokens->invisible);
+    usdAttr.Set(value ? UsdGeomTokens->inherited : UsdGeomTokens->invisible, timeCode);
   }
 }
 

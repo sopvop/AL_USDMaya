@@ -14,6 +14,9 @@
 // limitations under the License.
 //
 #pragma once
+
+#include "../Api.h"
+
 #include "AL/usdmaya/fileio/ImportParams.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 
@@ -81,6 +84,7 @@ class ProxyShapeImport
   MObjectArray m_parentTransforms;
   MObject m_shape;
   MString m_proxy_name;
+  bool m_createdParent = true;
 public:
   AL_MAYA_DECLARE_COMMAND();
 private:
@@ -292,6 +296,7 @@ private:
 /// \brief  This function will generate all of the MEL script menus, and the option boxes, for all of the proxy shape
 ///         commands.
 /// \ingroup commands
+AL_USDMAYA_PUBLIC
 void constructProxyShapeCommandGuis();
 
 //----------------------------------------------------------------------------------------------------------------------

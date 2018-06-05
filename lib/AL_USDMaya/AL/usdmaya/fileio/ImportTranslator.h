@@ -14,6 +14,9 @@
 // limitations under the License.
 //
 #pragma once
+
+#include "../Api.h"
+
 #include "AL/maya/utils/FileTranslatorBase.h"
 #include "AL/usdmaya/fileio/ImportParams.h"
 
@@ -43,7 +46,9 @@ AL_MAYA_TRANSLATOR_BEGIN(ImportTranslator, "AL usdmaya import", true, false, "*.
   static constexpr const char* const kNurbsCurves = "Import Curves"; ///< the import curves option name
   static constexpr const char* const kAnimations = "Import Animations"; ///< the import animation option name
   static constexpr const char* const kDynamicAttributes = "Import Dynamic Attributes"; ///< the import dynamic attributes option name
-
+  static constexpr const char* const kStageUnload = "Load None"; ///< the import animation option name
+  static constexpr const char* const kReadDefaultValues = "Read Default Values"; ///< the import animation option name
+  
   /// \brief  provide a method to specify the import options
   /// \param  options a set of options that are constructed and later used for option parsing
   /// \return MS::kSuccess if ok
@@ -55,10 +60,13 @@ AL_MAYA_TRANSLATOR_BEGIN(ImportTranslator, "AL usdmaya import", true, false, "*.
       if(!options.addBool(kNurbsCurves, true)) return MS::kFailure;
       if(!options.addBool(kAnimations, true)) return MS::kFailure;
       if(!options.addBool(kDynamicAttributes, true)) return MS::kFailure;
+      if(!options.addBool(kStageUnload, false)) return MS::kFailure;
+      if(!options.addBool(kReadDefaultValues, true)) return MS::kFailure;
     return MS::kSuccess;
   }
 
 private:
+  AL_USDMAYA_PUBLIC
   MStatus reader(const MFileObject& file, const AL::maya::utils::OptionsParser& options, FileAccessMode mode);
   ImporterParams m_params;
 

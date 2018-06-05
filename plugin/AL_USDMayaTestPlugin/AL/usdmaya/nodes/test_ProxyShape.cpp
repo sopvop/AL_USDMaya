@@ -98,10 +98,6 @@ TEST(ProxyShape, basicProxyShapeSetUp)
     // make sure path is correct
     EXPECT_EQ(temp_path, root->GetRealPath());
 
-    // before we save, the layerManager won't exist!
-    AL::usdmaya::nodes::LayerManager* layerManager = AL::usdmaya::nodes::LayerManager::findManager();
-    EXPECT_FALSE(layerManager);
-
     // UsdPrim ProxyShape::getRootPrim()
     UsdPrim rootPrim = proxy->getRootPrim();
     EXPECT_TRUE(rootPrim);
@@ -131,7 +127,7 @@ TEST(ProxyShape, basicProxyShapeSetUp)
     EXPECT_EQ(MStatus(MS::kSuccess), MFileIO::saveAs("/tmp/AL_USDMayaTests_basicProxyShapeSetUp.ma"));
 
     // after saving, we should have a layerManager
-    layerManager = AL::usdmaya::nodes::LayerManager::findManager();
+    AL::usdmaya::nodes::LayerManager* layerManager = AL::usdmaya::nodes::LayerManager::findManager();
     ASSERT_TRUE(layerManager);
     SdfLayerHandle refoundExpectedLayer = layerManager->findLayer(session->GetIdentifier());
     EXPECT_TRUE(session->IsDirty());
@@ -1208,7 +1204,7 @@ TEST(ProxyShape, relativePathSupport)
 
   UsdStageCache &cache = AL::usdmaya::StageCache::Get();
   std::vector<UsdStageRefPtr> stages = cache.GetAllStages();
-  EXPECT_TRUE(not stages.empty());
+  EXPECT_TRUE(!stages.empty());
 
   auto stage = stages[0];
   checkStageAndRootLayer(stage, bootstrapFullPath);
@@ -1228,7 +1224,7 @@ TEST(ProxyShape, relativePathSupport)
 
   cache = AL::usdmaya::StageCache::Get();
   stages = cache.GetAllStages();
-  EXPECT_TRUE(not stages.empty());
+  EXPECT_TRUE(!stages.empty());
 
   stage = stages[0];
   checkStageAndRootLayer(stage, bootstrapFullPath);

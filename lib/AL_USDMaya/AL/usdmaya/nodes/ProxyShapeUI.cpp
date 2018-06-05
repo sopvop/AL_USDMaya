@@ -14,11 +14,6 @@
 // limitations under the License.
 //
 #include "maya/MTypes.h"
-#if MAYA_API_VERSION < 201700
-#include <QtGui/QApplication>
-#else
-#include <QGuiApplication>
-#endif
 
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
@@ -334,7 +329,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
       return SdfPath(pathStr);
   };
 
-  auto getHitPath = [&engine, &removeVariantFromPath] (const UsdImagingGLEngine::HitBatch::const_reference& it) -> SdfPath {
+  auto getHitPath = [&engine, &removeVariantFromPath] (UsdImagingGLEngine::HitBatch::const_reference& it) -> SdfPath {
       const UsdImagingGLEngine::HitInfo& hit = it.second;
       auto path = engine->GetPrimPathFromInstanceIndex(it.first, hit.hitInstanceIndex);
       if (!path.IsEmpty())
@@ -356,7 +351,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
       // will be the actual final selection, because we can't make sure this is going to
       // be called the last. So we are returning a deferred command here, that'll run last.
       // That'll check if the mesh is still selected, and run an internal deselect command on that.
-      const auto singleSelection = selectInfo.singleSelection();
+      // const auto singleSelection = selectInfo.singleSelection();
 
       uint32_t i = 0;
       for(auto it = hitBatch.begin(), e = hitBatch.end(); it != e; ++it, ++i)
@@ -382,13 +377,12 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
   {
     if(hitSelected)
     {
-#if MAYA_API_VERSION < 201700
-      Qt::KeyboardModifiers modifiers = QApplication::keyboardModifiers();
-#else
-      Qt::KeyboardModifiers modifiers = QGuiApplication::keyboardModifiers();
-#endif
-      bool shiftHeld = modifiers.testFlag(Qt::ShiftModifier);
-      bool ctrlHeld = modifiers.testFlag(Qt::ControlModifier);
+      int mods;
+      MString cmd = "getModifiers";
+      MGlobal::executeCommand(cmd, mods);
+
+      bool shiftHeld = (mods % 2);
+      bool ctrlHeld = (mods / 4 % 2);
       MGlobal::ListAdjustment mode = MGlobal::kReplaceList;
       if(shiftHeld && ctrlHeld)
         mode = MGlobal::kAddToList;
@@ -435,13 +429,12 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
   }
   else
   {
-#if MAYA_API_VERSION < 201700
-    Qt::KeyboardModifiers modifiers = QApplication::keyboardModifiers();
-#else
-    Qt::KeyboardModifiers modifiers = QGuiApplication::keyboardModifiers();
-#endif
-    bool shiftHeld = modifiers.testFlag(Qt::ShiftModifier);
-    bool ctrlHeld = modifiers.testFlag(Qt::ControlModifier);
+    int mods;
+    MString cmd = "getModifiers";
+    MGlobal::executeCommand(cmd, mods);
+    
+    bool shiftHeld = (mods % 2);
+    bool ctrlHeld = (mods / 4 % 2);
     MGlobal::ListAdjustment mode = MGlobal::kReplaceList;
     if(shiftHeld && ctrlHeld)
       mode = MGlobal::kAddToList;
@@ -456,7 +449,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
     if (!hitBatch.empty()) {
       paths.reserve(hitBatch.size());
 
-      auto addHit = [&engine, &paths, &getHitPath](const UsdImagingGLEngine::HitBatch::const_reference& it) {
+      auto addHit = [&engine, &paths, &getHitPath](UsdImagingGLEngine::HitBatch::const_reference& it) {
         paths.push_back(getHitPath(it));
       };
 
@@ -470,7 +463,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
           MDagPath cameraPath;
           selectInfo.view().getCamera(cameraPath);
           const auto cameraPoint = cameraPath.inclusiveMatrix() * MPoint(0.0, 0.0, 0.0, 1.0);
-          auto distanceToCameraSq = [&cameraPoint] (const UsdImagingGLEngine::HitBatch::const_reference& it) -> double {
+          auto distanceToCameraSq = [&cameraPoint] (UsdImagingGLEngine::HitBatch::const_reference& it) -> double {
               const auto dx = cameraPoint.x - it.second.worldSpaceHitPoint[0];
               const auto dy = cameraPoint.y - it.second.worldSpaceHitPoint[1];
               const auto dz = cameraPoint.z - it.second.worldSpaceHitPoint[2];

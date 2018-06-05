@@ -29,6 +29,7 @@
 
 #include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/refPtr.h"
 
 #include <memory>
 
@@ -182,7 +183,7 @@ namespace {
         {
           return nullptr;
         }
-        for (int i = 0; i < numShapes; ++i)
+        for (uint32_t i = 0; i < numShapes; ++i)
         {
           dag.extendToShapeDirectlyBelow(i);
           if (isProxyShape(dag.node()))
@@ -419,3 +420,5 @@ void wrapProxyShape()
     // in case pxr registers one at some point
 //    boost::python::to_python_converter<MBoundingBox, MBoundingBoxConverter>();
 }
+
+TF_REFPTR_CONST_VOLATILE_GET(ProxyShape)

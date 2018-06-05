@@ -14,6 +14,12 @@ add_library(${TRANSLATORS_PACKAGE}
     Camera.cpp
     MayaReference.cpp
     Mesh.cpp
+    NurbsCurve.cpp
+)
+
+target_compile_definitions(${TRANSLATORS_PACKAGE}
+  PRIVATE
+    AL_MAYA_MACROS_EXPORT
 )
 
 # Copy the plugin metadata file in a hierarchy replicating the install hierarchy.
@@ -57,6 +63,8 @@ target_link_libraries(${TRANSLATORS_PACKAGE} ${DEPENDANT_LIBRARIES})
 install(TARGETS ${TRANSLATORS_PACKAGE}
  LIBRARY
  DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+ RUNTIME
+ DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
 )
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
@@ -73,4 +81,6 @@ install(FILES ${arg_PUBLIC_HEADER_FILES}
      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${DIRECTORY_PATH}
 )
 
-add_subdirectory(tests)
+if(NOT SKIP_USDMAYA_TESTS)
+  add_subdirectory(tests)
+endif()

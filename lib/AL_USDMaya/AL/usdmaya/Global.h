@@ -14,6 +14,9 @@
 // limitations under the License.
 //
 #pragma once
+
+#include "./Api.h"
+
 #include "maya/MSceneMessage.h"
 #include "AL/usd/utils/ForwardDeclares.h"
 #include "AL/event/EventHandler.h"
@@ -31,28 +34,35 @@ class Global
 public:
 
   /// \brief  initialise the global state
+  AL_USDMAYA_PUBLIC
   static void onPluginLoad();
 
   /// \brief  uninitialise the global state
+  AL_USDMAYA_PUBLIC
   static void onPluginUnload();
 
   /// pre save callback
+  AL_USDMAYA_PUBLIC
   static AL::event::CallbackId preSave()
     { return m_preSave; }
 
   /// post save callback
+  AL_USDMAYA_PUBLIC
   static AL::event::CallbackId postSave()
     { return m_postSave; }
 
   /// pre open callback
+  AL_USDMAYA_PUBLIC
   static AL::event::CallbackId preRead()
     { return m_preRead; }
 
   /// post open callback
+  AL_USDMAYA_PUBLIC
   static AL::event::CallbackId postRead()
     { return m_postRead; }
 
   /// callback used to flush the USD caches after a file new
+  AL_USDMAYA_PUBLIC
   static AL::event::CallbackId fileNew()
     { return m_fileNew; }
 
@@ -62,6 +72,8 @@ private:
   static AL::event::CallbackId m_preRead;  ///< callback executed before opening a maya file
   static AL::event::CallbackId m_postRead; ///< callback executed after opening a maya file - needed to re-hook up the UsdPrims
   static AL::event::CallbackId m_fileNew;  ///< callback used to flush the USD caches after a file new
+  static AL::event::CallbackId m_preExport; ///< callback prior to exporting the scene (so we can store the session layer)
+  static AL::event::CallbackId m_postExport; ///< callback after exporting
 };
 
 //----------------------------------------------------------------------------------------------------------------------

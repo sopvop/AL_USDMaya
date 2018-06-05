@@ -50,46 +50,6 @@ namespace {
 namespace AL {
 namespace usdmaya {
 
-//----------------------------------------------------------------------------------------------------------------------
-static const char* const eventTypeStrings[] =
-{
-  "custom",
-  "schema",
-  "coremaya",
-  "usdmaya"
-};
-
-//----------------------------------------------------------------------------------------------------------------------
-class MayaEventSystemBinding
-  : public AL::event::EventSystemBinding
-{
-public:
-
-  MayaEventSystemBinding()
-    : EventSystemBinding(eventTypeStrings, sizeof(eventTypeStrings) / sizeof(const char*)) {}
-
-  bool executePython(const char* const code) override
-  {
-    return MGlobal::executePythonCommand(code, false, true);
-  }
-
-  bool executeMEL(const char* const code) override
-  {
-    return MGlobal::executeCommand(code, false, true);
-  }
-
-  void writeLog(EventSystemBinding::Type severity, const char* const text) override
-  {
-    switch(severity)
-    {
-    case kInfo: MGlobal::displayInfo(text); break;
-    case kWarning: MGlobal::displayWarning(text); break;
-    case kError: MGlobal::displayError(text); break;
-    }
-  }
-};
-
-static MayaEventSystemBinding g_eventSystem;
 
 //----------------------------------------------------------------------------------------------------------------------
 AL::event::CallbackId Global::m_preSave;
@@ -97,6 +57,8 @@ AL::event::CallbackId Global::m_postSave;
 AL::event::CallbackId Global::m_preRead;
 AL::event::CallbackId Global::m_postRead;
 AL::event::CallbackId Global::m_fileNew;
+AL::event::CallbackId Global::m_preExport;
+AL::event::CallbackId Global::m_postExport;
 
 //----------------------------------------------------------------------------------------------------------------------
 static void onFileNew(void*)
@@ -284,13 +246,21 @@ static void postFileSave(void*)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+static void preFileExport(void* p)
+{
+  nodes::ProxyShape::serializeAll();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+static void postFileExport(void* p)
+{
+  postFileSave(p);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 void Global::onPluginLoad()
 {
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("Registering callbacks\n");
-
-  AL::event::EventScheduler::initScheduler(&g_eventSystem);
-  auto ptr = new AL::maya::event::MayaEventHandler(&AL::event::EventScheduler::getScheduler(), AL::event::kMayaEventType);
-  new AL::maya::event::MayaEventManager(ptr);
 
   auto& manager = AL::maya::event::MayaEventManager::instance();
   m_fileNew = manager.registerCallback(onFileNew, "AfterNew", "usdmaya_onFileNew", 0x1000);
@@ -298,6 +268,8 @@ void Global::onPluginLoad()
   m_postSave = manager.registerCallback(postFileSave, "AfterSave", "usdmaya_postFileSave", 0x1000);
   m_preRead = manager.registerCallback(preFileRead, "BeforeFileRead", "usdmaya_preFileRead", 0x1000);
   m_postRead = manager.registerCallback(postFileRead, "AfterFileRead", "usdmaya_postFileRead", 0x1000);
+  m_preExport = manager.registerCallback(preFileExport, "BeforeExport", "usdmaya_preFileExport", 0x1000);
+  m_postExport = manager.registerCallback(postFileExport, "AfterExport", "usdmaya_postFileExport", 0x1000);
 
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("Registering USD plugins\n");
   // Let USD know about the additional plugins
@@ -317,6 +289,8 @@ void Global::onPluginUnload()
   manager.unregisterCallback(m_postSave);
   manager.unregisterCallback(m_preRead);
   manager.unregisterCallback(m_postRead);
+  manager.unregisterCallback(m_preExport);
+  manager.unregisterCallback(m_postExport);
   StageCache::removeCallbacks();
 
   AL::maya::event::MayaEventManager::freeInstance();

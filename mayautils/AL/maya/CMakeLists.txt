@@ -10,8 +10,8 @@ set(MAYAUTILS_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib)
 # Source 
 ####################################################################################################
 
-add_definitions(-DAL_MAYAUTILS_DEBUG=0)
 list(APPEND maya_utils_headers
+    utils/Api.h
     utils/CommandGuiHelper.h
     utils/FileTranslatorBase.h
     utils/FileTranslatorOptions.h
@@ -26,6 +26,7 @@ list(APPEND maya_utils_headers
 
 list(APPEND maya_event_headers
     event/MayaEventManager.h
+    event/Api.h
 )
 
 list(APPEND maya_source
@@ -39,6 +40,13 @@ list(APPEND maya_source
 add_library(${MAYAUTILS_LIBRARY_NAME}
     SHARED
         ${maya_source}
+)
+
+target_compile_definitions(${MAYAUTILS_LIBRARY_NAME}
+    PRIVATE
+        AL_MAYA_EVENTS_EXPORT
+        AL_MAYA_UTILS_EXPORT
+        AL_MAYA_MACROS_EXPORT
 )
 
 target_include_directories(${MAYAUTILS_LIBRARY_NAME}
@@ -70,6 +78,10 @@ install( FILES ${maya_event_headers}
 install(TARGETS ${MAYAUTILS_LIBRARY_NAME}
     LIBRARY
     DESTINATION ${MAYAUTILS_LIBRARY_LOCATION}
+    RUNTIME
+    DESTINATION ${MAYAUTILS_LIBRARY_LOCATION}
 )
 
-add_subdirectory(tests)
+if(NOT SKIP_USDMAYA_TESTS)
+  add_subdirectory(tests)
+endif()

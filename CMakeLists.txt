@@ -28,29 +28,42 @@ find_package(Maya REQUIRED)
 
 include_directories(${MAYA_INCLUDE_DIRS})
 
-if(${MAYA_API_VERSION} STRGREATER 2017)
-    find_package(Qt5Gui REQUIRED)
-else()
-    find_package(Qt4 REQUIRED QtGui)
-endif()
-
 include_directories(${PXR_INCLUDE_DIRS} ${PXR_CMAKE_DIR}/third_party/maya/include)
 link_directories(${PXR_CMAKE_DIR}/third_party/maya/lib)
 
 # FindBoost is particularly buggy, and doesn't like custom boost locations.
 # Adding specific components forces calls to _Boost_find_library, which
 # is the rationale for listing them here.
+set(Boost_FIND_COMPONENTS
+     python
+     thread
+     filesystem
+)
+if(WIN32)
+    list(APPEND Boost_FIND_COMPONENTS
+        chrono
+    )
+endif()
+
 find_package(Boost COMPONENTS
-                python
-                thread
+                ${Boost_FIND_COMPONENTS}
                 REQUIRED
 )
 
-set(CMAKE_CXX_FLAGS
-    -std=c++11
-    -msse3
-    "${_PXR_CXX_WARNING_FLAGS}"
-)
+set(NEED_BOOST_FILESYSTEM ON)
+
+if(WIN32)
+    set(CMAKE_CXX_FLAGS
+        -std=c++11
+        "${_PXR_CXX_FLAGS}"
+    )
+else()
+    set(CMAKE_CXX_FLAGS
+        -std=c++11
+        -msse3
+        "${_PXR_CXX_FLAGS}"
+    )
+endif()
 string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
 set(CMAKE_VERBOSE_MAKEFILE OFF)
@@ -58,6 +71,11 @@ set(CMAKE_VERBOSE_MAKEFILE OFF)
 option(BUILD_USDMAYA_SCHEMAS "Build optional schemas." ON)
 option(BUILD_USDMAYA_TRANSLATORS "Build optional translators." ON)
 option(VALIDATE_GENERATED_SCHEMAS "Generate schemas code and compare." OFF)
+option(SKIP_USDMAYA_TESTS "Build tests" OFF)
+
+if(NOT SKIP_USDMAYA_TESTS)
+    enable_testing()
+endif()
 
 set(AL_USDMAYA_LOCATION_NAME
     "AL_USDMAYA_LOCATION"
@@ -103,3 +121,6 @@ install(FILES ${PROJECT_BINARY_DIR}/ALUsdMayaConfig.cmake
   DESTINATION ${CMAKE_INSTALL_PREFIX}
   COMPONENT dev
 )
+
+install(CODE "message(STATUS \"POST INSTALL: Compiling python/pyc for ${CMAKE_INSTALL_PREFIX} ... \")")
+install(CODE "execute_process(COMMAND python -m compileall ${CMAKE_INSTALL_PREFIX} )")
