@@ -35,6 +35,7 @@ list(APPEND AL_usdmaya_cmds_headers
         AL/usdmaya/cmds/ProxyShapeCommands.h
         AL/usdmaya/cmds/ProxyShapeSelectCommands.h
         AL/usdmaya/cmds/ProxyShapePostLoadProcess.h
+        AL/usdmaya/cmds/RendererCommands.h
         AL/usdmaya/cmds/UnloadPrim.h
 )
 list(APPEND AL_usdmaya_cmds_source
@@ -44,6 +45,7 @@ list(APPEND AL_usdmaya_cmds_source
         AL/usdmaya/cmds/ProxyShapeCommands.cpp
         AL/usdmaya/cmds/ProxyShapeSelectCommands.cpp
         AL/usdmaya/cmds/ProxyShapePostLoadProcess.cpp
+        AL/usdmaya/cmds/RendererCommands.cpp
         AL/usdmaya/cmds/UnloadPrim.cpp
 )
 
@@ -102,6 +104,7 @@ list(APPEND AL_usdmaya_nodes_headers
         AL/usdmaya/nodes/ProxyDrawOverride.h
         AL/usdmaya/nodes/ProxyShape.h
         AL/usdmaya/nodes/ProxyShapeUI.h
+        AL/usdmaya/nodes/RendererManager.h
         AL/usdmaya/nodes/Transform.h
         AL/usdmaya/nodes/TransformationMatrix.h
 )
@@ -116,6 +119,7 @@ list(APPEND AL_usdmaya_nodes_source
         AL/usdmaya/nodes/ProxyShape.cpp
         AL/usdmaya/nodes/ProxyShapeSelection.cpp
         AL/usdmaya/nodes/ProxyShapeUI.cpp
+        AL/usdmaya/nodes/RendererManager.cpp
         AL/usdmaya/nodes/Transform.cpp
         AL/usdmaya/nodes/TransformationMatrix.cpp
         AL/usdmaya/nodes/proxy/DrivenTransforms.cpp
@@ -165,6 +169,7 @@ set(Boost_LINK_LIBRARIES
 if(WIN32)
     list(APPEND Boost_LINK_LIBRARIES
         ${Boost_CHRONO_LIBRARY}
+        ${Boost_DATE_TIME_LIBRARY}
     )
 endif()
 
