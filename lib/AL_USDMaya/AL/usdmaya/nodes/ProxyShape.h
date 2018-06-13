@@ -409,6 +409,11 @@ public:
   AL_USDMAYA_PUBLIC
   MBoundingBox boundingBox() const override;
 
+  inline void clearBoundingBoxCache()
+  {
+    m_boundingBoxCache.clear();
+  }
+
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   AL_usdmaya_Transform utils
   /// \brief  A set of commands to manipulate the chains of transforms that map to the usd prims found in a stage.

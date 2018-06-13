@@ -16,6 +16,7 @@
 #include "AL/maya/utils/CommandGuiHelper.h"
 #include "AL/usdmaya/TypeIDs.h"
 #include "AL/usdmaya/DebugCodes.h"
+#include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 
@@ -1887,6 +1888,28 @@ void TransformationMatrix::pushToPrim()
       {
       }
       break;
+    }
+  }
+
+  // Anytime we update the xform, we need to tell the proxy shape that it
+  // needs to update it's bounding box cache
+  if (!m_transformNode.isNull())
+  {
+    MStatus status;
+    MFnDependencyNode mfn(m_transformNode, &status);
+    if (status && mfn.typeId() == Transform::kTypeId)
+    {
+      auto xform = static_cast<Transform*>(mfn.userNode());
+      MObject proxyObj = xform->getProxyShape();
+      if (!proxyObj.isNull())
+      {
+        MFnDependencyNode proxyMfn(proxyObj);
+        if (proxyMfn.typeId() == ProxyShape::kTypeId)
+        {
+          ProxyShape* proxy = static_cast<ProxyShape*>(proxyMfn.userNode());
+          proxy->clearBoundingBoxCache();
+        }
+      }
     }
   }
 }
