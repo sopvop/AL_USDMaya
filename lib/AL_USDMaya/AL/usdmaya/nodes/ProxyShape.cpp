@@ -1790,6 +1790,8 @@ bool ProxyShape::setInternalValue(const MPlug& plug, const MDataHandle& dataHand
   else
   if(plug == m_primPath)
   {
+    clearBoundingBoxCache();
+
     // can't use dataHandle.datablock(), as this is a temporary datahandle
     MDataBlock datablock = forceCache();
     AL_MAYA_CHECK_ERROR_RETURN_VAL(outputStringValue(datablock, m_primPath, dataHandle.asString()),
@@ -1820,6 +1822,8 @@ bool ProxyShape::setInternalValue(const MPlug& plug, const MDataHandle& dataHand
   else
   if(plug == m_excludePrimPaths || plug == m_excludedTranslatedGeometry)
   {
+    clearBoundingBoxCache();
+
     // can't use dataHandle.datablock(), as this is a temporary datahandle
     MDataBlock datablock = forceCache();
     AL_MAYA_CHECK_ERROR_RETURN_VAL(outputStringValue(datablock, plug.attribute(), dataHandle.asString()),
