@@ -1306,9 +1306,7 @@ MStatus TransformationMatrix::insertOp(
   auto findOpInsertPos = [&](size_t opIndex) -> int {
 
     assert(opIndex != PxrUsdMayaXformStack::NO_INDEX);
-
-    auto& mayaStack = PxrUsdMayaXformStack::MayaStack();
-    assert(opIndex < mayaStack.GetOps().size());
+    assert(opIndex < PxrUsdMayaXformStack::MayaStack().GetOps().size());
 
     auto indexIter = std::lower_bound(m_orderedOpMayaIndices.begin(),
         m_orderedOpMayaIndices.end(), opIndex);
