@@ -1252,7 +1252,8 @@ MStatus TransformationMatrix::removeOp(
   // is never that big, and we likely won't be removing ops that often...
   bool foundOne = false;
   // Iterate backwards, so the indices will remain valid even if we remove an item...
-  for (size_t i = m_orderedOps.size() - 1; i >= 0; --i)
+
+  for (size_t i = m_orderedOps.size() - 1; ; --i)
   {
     if (opName == m_orderedOps[i].GetName())
     {
@@ -1267,6 +1268,9 @@ MStatus TransformationMatrix::removeOp(
       if (foundOne) break;
       foundOne = true;
     }
+    // Using unsigned, so need to check BEFORE decrementing... could check for,
+    // ie, i == reinterpret_cast<size_t>(-1), but that makes me nervous...
+    if (i == 0) break;
   }
   m_flags &= ~oldFlag;
   if (!foundOne)
