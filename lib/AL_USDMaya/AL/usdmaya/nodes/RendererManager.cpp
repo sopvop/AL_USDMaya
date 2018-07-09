@@ -169,7 +169,7 @@ bool RendererManager::setInternalValue(const MPlug& plug, const MDataHandle& dat
   if (plug == m_rendererPlugin)
   {
     short index = dataHandle.asShort();
-    if (index >= 0 && index < m_rendererPluginsNames.length())
+    if (index >= 0 && index < short(m_rendererPluginsNames.length()))
     {
       MPlug plug(thisMObject(), m_rendererPluginName);
       plug.setString(m_rendererPluginsNames[index]);
