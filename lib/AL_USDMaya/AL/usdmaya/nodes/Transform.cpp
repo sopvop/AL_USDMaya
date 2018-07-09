@@ -234,7 +234,7 @@ void Transform::updateTransform(MDataBlock& dataBlock)
 //----------------------------------------------------------------------------------------------------------------------
 void Transform::setPrim(const UsdPrim& prim)
 {
-  transform()->setPrimInternal(prim);
+  transform()->setPrimInternal(prim, this);
   // Now make sure our own attributes are up-to-date
   dirtyMatrix();
 }

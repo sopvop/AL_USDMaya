@@ -547,6 +547,7 @@ bool ProxyShape::getRenderAttris(void* pattribs, const MHWRender::MFrameContext&
   const float complexities[] = {1.05f, 1.15f, 1.25f, 1.35f, 1.45f, 1.55f, 1.65f, 1.75f, 1.9f}; 
   attribs.complexity = complexities[complexityPlug().asInt()];
   attribs.showGuides = displayGuidesPlug().asBool();
+  attribs.showRender = displayRenderGuidesPlug().asBool();
   return true;
 }
 
@@ -728,7 +729,7 @@ MStatus ProxyShape::initialise()
 
     m_complexity = addInt32Attr("complexity", "cplx", 0, kCached | kConnectable | kReadable | kWritable | kAffectsAppearance | kKeyable | kStorable);
     setMinMax(m_complexity, 0, 8, 0, 4);
-    m_outStageData = addDataAttr("outStageData", "od", StageData::kTypeId, kInternal | kReadable | kWritable | kAffectsAppearance);
+    m_outStageData = addDataAttr("outStageData", "od", StageData::kTypeId, kConnectable | kReadable | kWritable | kAffectsAppearance);
     m_displayGuides = addBoolAttr("displayGuides", "dg", false, kCached | kKeyable | kWritable | kAffectsAppearance | kStorable);
     m_displayRenderGuides = addBoolAttr("displayRenderGuides", "drg", false, kCached | kKeyable | kWritable | kAffectsAppearance | kStorable);
     m_unloaded = addBoolAttr("unloaded", "ul", false, kCached | kKeyable | kWritable | kAffectsAppearance | kStorable);
@@ -1227,7 +1228,10 @@ void ProxyShape::loadStage()
   AL_BEGIN_PROFILE_SECTION(LoadStage);
   MDataBlock dataBlock = forceCache();
   // in case there was already a stage in m_stage, check to see if it's edit target has been altered
-  trackEditTargetLayer();
+  if (m_stage)
+  {
+    trackEditTargetLayer();
+  }
   m_stage = UsdStageRefPtr();
 
   // Get input attr values
@@ -1763,6 +1767,11 @@ MStatus ProxyShape::computeOutStageData(const MPlug& plug, MDataBlock& dataBlock
     return MS::kFailure;
   }
 
+  // make sure a stage is loaded
+  if (!m_stage)
+  {
+    loadStage();
+  }
   // Set the output stage data params
   usdStageData->stage = m_stage;
   usdStageData->primPath = m_path;
@@ -2122,6 +2131,8 @@ void ProxyShape::registerEvents()
   registerEvent("PreDeserialiseTransformRefs", AL::event::kUSDMayaEventType, Global::postRead());
   registerEvent("PostDeserialiseTransformRefs", AL::event::kUSDMayaEventType, Global::postRead());
   registerEvent("EditTargetChanged", AL::event::kUSDMayaEventType);
+  registerEvent("SelectionStarted", AL::event::kUSDMayaEventType);
+  registerEvent("SelectionEnded", AL::event::kUSDMayaEventType);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
