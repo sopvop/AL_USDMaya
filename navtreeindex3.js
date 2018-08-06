@@ -1,0 +1,20 @@
+var NAVTREEINDEX3 =
+{
+"structAL_1_1usdmaya_1_1nodes_1_1SelectionUndoHelper.html#a7816c7125483f3a3101076f466e538a5":[5,0,0,0,2,13,2],
+"structAL_1_1usdmaya_1_1nodes_1_1SelectionUndoHelper.html#aa1cddb8b16001b00564edfdb05c05f1f":[5,0,0,0,2,13,3],
+"structAL_1_1usdmaya_1_1nodes_1_1proxy_1_1PrimFilterInterface.html":[5,0,0,0,2,0,2],
+"structAL_1_1usdmaya_1_1nodes_1_1proxy_1_1PrimFilterInterface.html#a4c0d19a15e132cef718e0f536f8b3d36":[5,0,0,0,2,0,2,0],
+"structAL_1_1usdmaya_1_1nodes_1_1proxy_1_1PrimFilterInterface.html#abee6bc6053d32af9c34339cb7bf8bd79":[5,0,0,0,2,0,2,1],
+"structAL__USDMayaTranslatorProxyShape.html":[5,0,2],
+"structcompare__MDagPath.html":[5,0,3],
+"structcompare__MDagPath.html#a59c8295252a2503ebf8485a7cac4b6af":[5,0,3,0],
+"structcompare__MPlug.html":[5,0,4],
+"structcompare__MPlug.html#ab8cc392e5ee8c6ae6f3ebf264c2844a1":[5,0,4,0],
+"structstd_1_1hash_3_01AL_1_1usdmaya_1_1ProfilerSectionPath_01_4.html":[5,0,1,0],
+"structstd_1_1hash_3_01AL_1_1usdmaya_1_1ProfilerSectionPath_01_4.html#a02b18b0665185706297fa2e41b465dad":[5,0,1,0,0],
+"structstd_1_1hash_3_01AL_1_1usdmaya_1_1ProfilerSectionTag_01_4.html":[5,0,1,1],
+"structstd_1_1hash_3_01AL_1_1usdmaya_1_1ProfilerSectionTag_01_4.html#a30d71f332de0744119ff832d28da4fcf":[5,0,1,1,0],
+"todo.html":[3],
+"translatorProxyShape_8h_source.html":[6,0,0,0,0,0,1,2,9],
+"translator_plugins.html":[2]
+};
