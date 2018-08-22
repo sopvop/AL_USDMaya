@@ -87,7 +87,7 @@ public:
   ///         units for USD
   /// \return true if the attribute is known to be animated, and the attribute/conversionFactor contain valid results
   AL_USDMAYA_PUBLIC
-  static bool getAnimationVariables(const PxrUsdMayaXformOpClassification& operation, MObjectArray& attributes, double& conversionFactor);
+  static bool getAnimationVariables(const UsdMayaXformOpClassification& operation, MObjectArray& attributes, double& conversionFactor);
 
 private:
   static MStatus processMetaData(const UsdPrim& from, MObject& to, const ImporterParams& params);

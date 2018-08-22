@@ -46,7 +46,7 @@ class TransformationMatrix
   UsdGeomXform m_xform;
   UsdTimeCode m_time;
   std::vector<UsdGeomXformOp> m_xformops;
-  PxrUsdMayaXformStack::OpClassList m_orderedOps;
+  UsdMayaXformStack::OpClassList m_orderedOps;
   std::vector<size_t> m_orderedOpMayaIndices;
   MObject m_transformNode;
 
@@ -152,9 +152,9 @@ public:
   ///         to change them; otherwise, as soon as any non-CommonStack-compatible op was inserted, we
   ///         would need to switch to a MayaStack, which would mean splitting the singular pivot to
   ///         separate rotatePivot and scalePivot.
-  /// return  A PxrUsdMayaXformStack that is similar to a MayaStack, but with a single pivot; a MayaStack
+  /// return  A UsdMayaXformStack that is similar to a MayaStack, but with a single pivot; a MayaStack
   ///         and will have an equivalent MayaSinglePivotStack if the rotatePivot == scalePivot
-  static const PxrUsdMayaXformStack& MayaSinglePivotStack();
+  static const UsdMayaXformStack& MayaSinglePivotStack();
 
   /// \brief  sets the MObject for the transform
   /// \param  object the MObject for the custom transform node
