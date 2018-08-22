@@ -1780,6 +1780,8 @@ MStatus TransformationMatrix::insertRotateOp()
     break;
 
   default:
+    TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformationMatrix::insertRotateOp - got invalid rotation order; assuming XYZ");
+    op = m_xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotate"));
     break;
   }
 

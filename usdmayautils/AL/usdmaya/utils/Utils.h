@@ -67,6 +67,7 @@ MTransformationMatrix matrixToMTransformationMatrix(GfMatrix4d& value);
 /// \param  the output float vec3 array
 /// \param  count number of elements
 //----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_UTILS_PUBLIC
 void convertDoubleVec4ArrayToFloatVec3Array(const double* const input, float* const output, size_t count);
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -75,6 +76,7 @@ void convertDoubleVec4ArrayToFloatVec3Array(const double* const input, float* co
 /// \return the MString
 /// \ingroup usdmaya
 //----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_UTILS_PUBLIC
 inline MString convert(const TfToken& token)
 {
   return MString(token.GetText(), token.size());
