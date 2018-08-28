@@ -30,7 +30,7 @@
  <tr style="height: 56px;">
   <td style="padding-left: 0.5em;">
    <div id="projectname">AL_USDMaya
-   &#160;<span id="projectnumber">0.29.0</span>
+   &#160;<span id="projectnumber">0.29.1</span>
    </div>
    <div id="projectbrief">USD to Maya Bridge</div>
   </td>
@@ -309,6 +309,12 @@ AL_USDMAYA_PUBLIC void&#160;</td><td class="memItemRight" valign="bottom"><a cla
 AL_USDMAYA_PUBLIC void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#a90c9fd6beeb347ef6ac300393fcf03e4">deserialiseTranslatorContext</a> ()</td></tr>
 <tr class="memdesc:a90c9fd6beeb347ef6ac300393fcf03e4"><td class="mdescLeft">&#160;</td><td class="mdescRight">deserialises the translator context <br /></td></tr>
 <tr class="separator:a90c9fd6beeb347ef6ac300393fcf03e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7f5cbeb0084b66fb9fdcdd6e0863c5ba"><td class="memItemLeft" align="right" valign="top">AL_USDMAYA_PUBLIC MString&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#a7f5cbeb0084b66fb9fdcdd6e0863c5ba">recordUsdPrimToMayaPath</a> (const UsdPrim &amp;usdPrim, const MObject &amp;mayaObject)</td></tr>
+<tr class="memdesc:a7f5cbeb0084b66fb9fdcdd6e0863c5ba"><td class="mdescLeft">&#160;</td><td class="mdescRight">gets the maya node path for a prim, stores the mapping and returns it  <a href="#a7f5cbeb0084b66fb9fdcdd6e0863c5ba">More...</a><br /></td></tr>
+<tr class="separator:a7f5cbeb0084b66fb9fdcdd6e0863c5ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1cab9f0d34bf31da99204fa858a213d9"><td class="memItemLeft" align="right" valign="top">AL_USDMAYA_PUBLIC MString&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#a1cab9f0d34bf31da99204fa858a213d9">getMayaPathFromUsdPrim</a> (const UsdPrim &amp;usdPrim)</td></tr>
+<tr class="memdesc:a1cab9f0d34bf31da99204fa858a213d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">returns the stored maya node path for a prim  <a href="#a1cab9f0d34bf31da99204fa858a213d9">More...</a><br /></td></tr>
+<tr class="separator:a1cab9f0d34bf31da99204fa858a213d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa83c62e450e7ce1294906f0884eaea4a"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aa83c62e450e7ce1294906f0884eaea4a"></a>
 AL_USDMAYA_PUBLIC void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#aa83c62e450e7ce1294906f0884eaea4a">findTaggedPrims</a> ()</td></tr>
 <tr class="memdesc:aa83c62e450e7ce1294906f0884eaea4a"><td class="mdescLeft">&#160;</td><td class="mdescRight">aggregates logic that needs to iterate through the hierarchy looking for properties/metdata on prims <br /></td></tr>
@@ -785,6 +791,31 @@ static std::vector<br class="typebreak" />
 
 </div>
 </div>
+<a class="anchor" id="a1cab9f0d34bf31da99204fa858a213d9"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">AL_USDMAYA_PUBLIC MString AL::usdmaya::nodes::ProxyShape::getMayaPathFromUsdPrim </td>
+          <td>(</td>
+          <td class="paramtype">const UsdPrim &amp;&#160;</td>
+          <td class="paramname"><em>usdPrim</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>returns the stored maya node path for a prim </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">usdPrim</td><td>a prim that has been brought into maya </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>a dag path to the maya object </dd></dl>
+
+</div>
+</div>
 <a class="anchor" id="ab8c7e5336a46d9801102423c0f97ed98"></a>
 <div class="memitem">
 <div class="memproto">
@@ -1224,6 +1255,42 @@ static std::vector<br class="typebreak" />
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a class="anchor" id="a7f5cbeb0084b66fb9fdcdd6e0863c5ba"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">AL_USDMAYA_PUBLIC MString AL::usdmaya::nodes::ProxyShape::recordUsdPrimToMayaPath </td>
+          <td>(</td>
+          <td class="paramtype">const UsdPrim &amp;&#160;</td>
+          <td class="paramname"><em>usdPrim</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const MObject &amp;&#160;</td>
+          <td class="paramname"><em>mayaObject</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>gets the maya node path for a prim, stores the mapping and returns it </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">usdPrim</td><td>the prim we are bringing in to maya </td></tr>
+    <tr><td class="paramname">mayaObject</td><td>the corresponding maya node </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>a dag path to the maya object </dd></dl>
 
 </div>
 </div>
@@ -1710,7 +1777,7 @@ static std::vector<br class="typebreak" />
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><a class="el" href="namespaceAL.html">AL</a></li><li class="navelem"><b>usdmaya</b></li><li class="navelem"><b>nodes</b></li><li class="navelem"><a class="el" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html">ProxyShape</a></li>
-    <li class="footer">Generated on Mon Aug 6 2018 14:36:19 for AL_USDMaya by
+    <li class="footer">Generated on Wed Aug 29 2018 09:20:42 for AL_USDMaya by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.7 </li>
   </ul>

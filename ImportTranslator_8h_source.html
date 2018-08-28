@@ -30,7 +30,7 @@
  <tr style="height: 56px;">
   <td style="padding-left: 0.5em;">
    <div id="projectname">AL_USDMaya
-   &#160;<span id="projectnumber">0.29.0</span>
+   &#160;<span id="projectnumber">0.29.1</span>
    </div>
    <div id="projectbrief">USD to Maya Bridge</div>
   </td>
@@ -163,17 +163,18 @@ $(document).ready(function(){initNavTree('ImportTranslator_8h_source.html','');}
 <div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;  }</div>
 <div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;</div>
 <div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;  MStatus reader(<span class="keyword">const</span> MFileObject&amp; file, <span class="keyword">const</span> AL::maya::utils::OptionsParser&amp; options, FileAccessMode mode) <span class="keyword">override</span>;</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;  ImporterParams m_params;</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;AL_MAYA_TRANSLATOR_END();</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;<span class="comment">//----------------------------------------------------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;} <span class="comment">// fileio</span></div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;} <span class="comment">// usdmaya</span></div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;} <span class="comment">// AL</span></div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;<span class="comment">//----------------------------------------------------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;  AL_USDMAYA_PUBLIC</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;  MStatus reader(<span class="keyword">const</span> MFileObject&amp; file, <span class="keyword">const</span> AL::maya::utils::OptionsParser&amp; options, FileAccessMode mode) <span class="keyword">override</span>;</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;  ImporterParams m_params;</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;AL_MAYA_TRANSLATOR_END();</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;<span class="comment">//----------------------------------------------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;} <span class="comment">// fileio</span></div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;} <span class="comment">// usdmaya</span></div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;} <span class="comment">// AL</span></div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;<span class="comment">//----------------------------------------------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;</div>
 <div class="ttc" id="group__fileio_html_ga046eca293f9dd3ec6b29c5a40811a178"><div class="ttname"><a href="group__fileio.html#ga046eca293f9dd3ec6b29c5a40811a178">AL::usdmaya::fileio::AL_MAYA_TRANSLATOR_BEGIN</a></div><div class="ttdeci">AL_MAYA_TRANSLATOR_BEGIN(ImportTranslator,&quot;AL usdmaya import&quot;, true, false,&quot;*.usda&quot;,&quot;*.usdc;*.usda;*.usd;*.usdt&quot;)</div><div class="ttdoc">A USD importer into Maya (partially supporting Animal Logic specific things) </div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
@@ -181,7 +182,7 @@ $(document).ready(function(){initNavTree('ImportTranslator_8h_source.html','');}
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><a class="el" href="dir_68267d1309a1af8e8297ef4c3efbcdba.html">src</a></li><li class="navelem"><a class="el" href="dir_c85d3e3c5052e9ad9ce18c6863244a25.html">lib</a></li><li class="navelem"><a class="el" href="dir_1bb7ef9dbabe305f6710c4d5a2d124d7.html">AL_USDMaya</a></li><li class="navelem"><a class="el" href="dir_1718e17ee0fed015a6dbff620e7e9f68.html">AL</a></li><li class="navelem"><a class="el" href="dir_bfd18ef9f7ca57c4b661440a6abf5ddf.html">usdmaya</a></li><li class="navelem"><a class="el" href="dir_ec9d30a9ccd844418f16eca8313b1ffe.html">fileio</a></li><li class="navelem"><b>ImportTranslator.h</b></li>
-    <li class="footer">Generated on Mon Aug 6 2018 14:36:18 for AL_USDMaya by
+    <li class="footer">Generated on Wed Aug 29 2018 09:20:41 for AL_USDMaya by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.7 </li>
   </ul>

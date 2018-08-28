@@ -25,6 +25,7 @@ var structAL_1_1usdmaya_1_1fileio_1_1ExporterParams =
     [ "m_nodes", "structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#a5596ddfae63b67184b7e3d8c8923872d", null ],
     [ "m_nurbsCurves", "structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#ac8e6d8c2d41f78345fdf875dd11e1c4a", null ],
     [ "m_selected", "structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#a9eed80821f6182b19f26123680cbb6bc", null ],
+    [ "m_subSamples", "structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#a4049e7e4b0545ae81099cbbec65d68f4", null ],
     [ "m_timeCode", "structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#afc7e41ad7ba4f1019bfc4d28a542647b", null ],
     [ "m_useTimelineRange", "structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#ad6d6b361fcf46a7157a9dad4e615489d", null ]
 ];

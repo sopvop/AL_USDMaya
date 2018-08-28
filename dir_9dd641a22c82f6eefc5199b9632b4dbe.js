@@ -8,6 +8,5 @@ var dir_9dd641a22c82f6eefc5199b9632b4dbe =
     [ "ProxyShapeUI.h", "ProxyShapeUI_8h_source.html", null ],
     [ "RendererManager.h", "RendererManager_8h_source.html", null ],
     [ "Transform.h", "Transform_8h_source.html", null ],
-    [ "TransformationMatrix.h", "TransformationMatrix_8h_source.html", null ],
-    [ "translatorProxyShape.h", "translatorProxyShape_8h_source.html", null ]
+    [ "TransformationMatrix.h", "TransformationMatrix_8h_source.html", null ]
 ];

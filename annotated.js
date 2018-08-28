@@ -105,7 +105,6 @@ var annotated =
       [ "hash< AL::usdmaya::ProfilerSectionPath >", "structstd_1_1hash_3_01AL_1_1usdmaya_1_1ProfilerSectionPath_01_4.html", "structstd_1_1hash_3_01AL_1_1usdmaya_1_1ProfilerSectionPath_01_4" ],
       [ "hash< AL::usdmaya::ProfilerSectionTag >", "structstd_1_1hash_3_01AL_1_1usdmaya_1_1ProfilerSectionTag_01_4.html", "structstd_1_1hash_3_01AL_1_1usdmaya_1_1ProfilerSectionTag_01_4" ]
     ] ],
-    [ "AL_USDMayaTranslatorProxyShape", "structAL__USDMayaTranslatorProxyShape.html", null ],
     [ "compare_MDagPath", "structcompare__MDagPath.html", "structcompare__MDagPath" ],
     [ "compare_MPlug", "structcompare__MPlug.html", "structcompare__MPlug" ]
 ];

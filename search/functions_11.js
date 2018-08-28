@@ -14,6 +14,7 @@ var searchData=
   ['readvector',['readVector',['../classAL_1_1usdmaya_1_1nodes_1_1TransformationMatrix.html#a16c916cd4670f7fc68c211a1237f1ee9',1,'AL::usdmaya::nodes::TransformationMatrix']]],
   ['rebuild',['rebuild',['http://github.al.com.au/pages/documentation/shareBase/classAL_1_1DelaunayMesher3d.html#add611535b7617af46a2cfe2ef12ecb3a',1,'AL::DelaunayMesher3d']]],
   ['recondition',['recondition',['http://github.al.com.au/pages/documentation/shareBase/structAL_1_1DefaultRecycleQueuePolicy.html#aa0b933cea12275734184d53064f7dd7a',1,'AL::DefaultRecycleQueuePolicy::recondition()'],['http://github.al.com.au/pages/documentation/shareBase/structAL_1_1LocationLoggedRecycleQueuePolicy.html#ab7b4fdc9e50c99df69796ecc16ff73a5',1,'AL::LocationLoggedRecycleQueuePolicy::recondition()']]],
+  ['recordusdprimtomayapath',['recordUsdPrimToMayaPath',['../classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#a7f5cbeb0084b66fb9fdcdd6e0863c5ba',1,'AL::usdmaya::nodes::ProxyShape']]],
   ['redoitimplementation',['redoItImplementation',['../structAL_1_1usdmaya_1_1cmds_1_1BaseCallbackCommand.html#a6bcfccee142af254905e642488d4e1d2',1,'AL::usdmaya::cmds::BaseCallbackCommand']]],
   ['registerevents',['registerEvents',['../classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#ad4d699305724499d8ef60401234bef57',1,'AL::usdmaya::nodes::ProxyShape']]],
   ['registeritem',['registerItem',['../structAL_1_1usdmaya_1_1fileio_1_1translators_1_1TranslatorContext.html#a67b73f91cbe2b2c21baa21bc0adc85de',1,'AL::usdmaya::fileio::translators::TranslatorContext']]],

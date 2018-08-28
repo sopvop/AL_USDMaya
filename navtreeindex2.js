@@ -1,5 +1,7 @@
 var NAVTREEINDEX2 =
 {
+"classAL_1_1usdmaya_1_1nodes_1_1TransformationMatrix.html#a752305032671315b1c00f5df20405e53":[4,1,0,9,8],
+"classAL_1_1usdmaya_1_1nodes_1_1TransformationMatrix.html#a774f7ca79dcbc0c5b2ffd138f8d8d331":[4,1,0,9,16],
 "classAL_1_1usdmaya_1_1nodes_1_1TransformationMatrix.html#a81d622ff499fda4f84c8bb96913eef78":[4,1,0,9,7],
 "classAL_1_1usdmaya_1_1nodes_1_1TransformationMatrix.html#a8e94d2f8a54c04fd25e61c3723d277c7":[4,1,0,9,1],
 "classAL_1_1usdmaya_1_1nodes_1_1TransformationMatrix.html#a990311b9c1da5e2fd2bdbcea541a2d88":[4,1,0,9,28],
@@ -128,8 +130,8 @@ var NAVTREEINDEX2 =
 "group__usdmaya.html#ga3ad8868f7180b1b3b79db9eb8f49fe98":[4,1,7],
 "group__usdmaya.html#gaa4edec5f87980cd4a7a84c60b4c832f1":[4,1,8],
 "hierarchy.html":[5,2],
-"index.html":[0],
 "index.html":[],
+"index.html":[0],
 "index.html#intro_sec":[0,0],
 "mayahelpers.html":[1],
 "mayahelpers.html#almaya_commandgui":[1,0],
@@ -146,6 +148,7 @@ var NAVTREEINDEX2 =
 "structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#a0e88b1a14b66c9c36e8d44f5ef2c9954":[4,1,2,5,3],
 "structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#a313f18b50a957475a86976ad6d666a62":[4,1,2,5,19],
 "structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#a3d2bdd7024ca8b808ce061592aa172f9":[4,1,2,5,9],
+"structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#a4049e7e4b0545ae81099cbbec65d68f4":[4,1,2,5,25],
 "structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#a5596ddfae63b67184b7e3d8c8923872d":[4,1,2,5,22],
 "structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#a5d672b37bd617caf602cafb7a068c5bc":[4,1,2,5,14],
 "structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#a623bea4748d1428f8fdfda9afde00b87":[4,1,2,5,8],
@@ -162,12 +165,12 @@ var NAVTREEINDEX2 =
 "structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#ac8e6d8c2d41f78345fdf875dd11e1c4a":[4,1,2,5,23],
 "structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#ad2426b6290f8edeb36f455b3504665e0":[4,1,2,5,10],
 "structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#ad4306bdaf67062fee1fcb9cbaaad42cb":[4,1,2,5,0],
-"structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#ad6d6b361fcf46a7157a9dad4e615489d":[4,1,2,5,26],
+"structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#ad6d6b361fcf46a7157a9dad4e615489d":[4,1,2,5,27],
 "structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#ad81a184b399f449a8cd173198dc209b7":[4,1,2,5,2],
 "structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#ae5bea9439c917fcefbdcadb31854c464":[4,1,2,5,1],
 "structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#ae5c1fc6ab3b01c63b73439ecba8b953b":[4,1,2,5,11],
 "structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#ae7a755ca2de7e3d0e86752d622bf8717":[4,1,2,5,6],
-"structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#afc7e41ad7ba4f1019bfc4d28a542647b":[4,1,2,5,25],
+"structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#afc7e41ad7ba4f1019bfc4d28a542647b":[4,1,2,5,26],
 "structAL_1_1usdmaya_1_1fileio_1_1ImporterParams.html":[4,1,2,8],
 "structAL_1_1usdmaya_1_1fileio_1_1ImporterParams.html#a1b481bb43d4879871865267a546cc448":[4,1,2,8,9],
 "structAL_1_1usdmaya_1_1fileio_1_1ImporterParams.html#a241c1a6f5335a7e158d5cd0a140884db":[4,1,2,8,5],
@@ -246,8 +249,5 @@ var NAVTREEINDEX2 =
 "structAL_1_1usdmaya_1_1nodes_1_1HierarchyIterationLogic.html#a54b9cd1982311eb8e1e6bab9f97a9775":[5,0,0,0,2,4,0],
 "structAL_1_1usdmaya_1_1nodes_1_1HierarchyIterationLogic.html#a56a4b04954a0ae4b9c4c6c5f7f0f8af9":[5,0,0,0,2,4,1],
 "structAL_1_1usdmaya_1_1nodes_1_1HierarchyIterationLogic.html#a7b80bc8a6ca7505d9782e63345313a60":[5,0,0,0,2,4,3],
-"structAL_1_1usdmaya_1_1nodes_1_1SelectionUndoHelper.html":[5,0,0,0,2,13],
-"structAL_1_1usdmaya_1_1nodes_1_1SelectionUndoHelper.html#a10cacc6572e144720918d85147e9d36f":[5,0,0,0,2,13,4],
-"structAL_1_1usdmaya_1_1nodes_1_1SelectionUndoHelper.html#a150425d49be76f8baaa796d9c28cf686":[5,0,0,0,2,13,0],
-"structAL_1_1usdmaya_1_1nodes_1_1SelectionUndoHelper.html#a2bdbc4ab47f0ce4b1df0a68b138aa59a":[5,0,0,0,2,13,1]
+"structAL_1_1usdmaya_1_1nodes_1_1SelectionUndoHelper.html":[5,0,0,0,2,13]
 };

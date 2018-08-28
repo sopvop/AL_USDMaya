@@ -1,6 +1,5 @@
 var hierarchy =
 [
-    [ "AL_USDMayaTranslatorProxyShape", "structAL__USDMayaTranslatorProxyShape.html", null ],
     [ "AL::usdmaya::fileio::AnimationCheckTransformAttributes", "classAL_1_1usdmaya_1_1fileio_1_1AnimationCheckTransformAttributes.html", null ],
     [ "AL::usdmaya::fileio::AnimationTranslator", "classAL_1_1usdmaya_1_1fileio_1_1AnimationTranslator.html", null ],
     [ "AL::usdmaya::cmds::BaseCallbackCommand", "structAL_1_1usdmaya_1_1cmds_1_1BaseCallbackCommand.html", [

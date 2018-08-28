@@ -12,7 +12,6 @@ var searchData=
   ['al_5fsocket',['AL_Socket',['http://github.al.com.au/pages/documentation/shareBase/structAL__Socket.html',1,'']]],
   ['al_5ftexelgrid',['AL_TexelGrid',['http://github.al.com.au/pages/documentation/shareBase/classAL__TexelGrid.html',1,'']]],
   ['al_5funcompressedtexelgrid',['AL_UncompressedTexelGrid',['http://github.al.com.au/pages/documentation/shareBase/classAL__UncompressedTexelGrid.html',1,'']]],
-  ['al_5fusdmayatranslatorproxyshape',['AL_USDMayaTranslatorProxyShape',['../structAL__USDMayaTranslatorProxyShape.html',1,'']]],
   ['all_5fmutex_5fstats',['all_mutex_stats',['http://github.al.com.au/pages/documentation/shareBase/structAL_1_1all__mutex__stats.html',1,'AL']]],
   ['allwithinthresholdcollector',['AllWithinThresholdCollector',['http://github.al.com.au/pages/documentation/shareBase/structHashStore_1_1HashStore_1_1AllWithinThresholdCollector.html',1,'HashStore::HashStore']]],
   ['amoeba',['Amoeba',['http://github.al.com.au/pages/documentation/shareBase/classAmoeba.html',1,'']]],

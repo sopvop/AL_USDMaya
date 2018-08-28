@@ -168,6 +168,7 @@
           <topic label="findTaggedPrims" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#aa83c62e450e7ce1294906f0884eaea4a"/>
           <topic label="findTaggedPrims" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#a745b16666f63880b7bb09e61bddd5c61"/>
           <topic label="getCounts" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#a3145a1567454f694a58809c4a68f4f3b"/>
+          <topic label="getMayaPathFromUsdPrim" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#a1cab9f0d34bf31da99204fa858a213d9"/>
           <topic label="getPrimPathsFromCommaJoinedString" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#ab8c7e5336a46d9801102423c0f97ed98"/>
           <topic label="getRenderAttris" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#a40008dddd3a6a3563577cf030e4d72e1"/>
           <topic label="getRootPrim" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#a211f3625cfd4e43d9b18e32a541db982"/>
@@ -184,6 +185,7 @@
           <topic label="parentTransform" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#a621fc84c3fb9b74e7067f8c42d6d7646"/>
           <topic label="primChangedAtPath" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#aa0c729fc518ea2470340db183eb339c1"/>
           <topic label="printRefCounts" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#a9776368b4df85e9ad3dd67cc9b21f891"/>
+          <topic label="recordUsdPrimToMayaPath" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#a7f5cbeb0084b66fb9fdcdd6e0863c5ba"/>
           <topic label="registerEvents" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#ad4d699305724499d8ef60401234bef57"/>
           <topic label="removeAttributeChangedCallback" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#a24823f2f82737c77ee2b705a1dc579d1"/>
           <topic label="removeUsdTransformChain" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#afd3d6bc44bdc53b72912dfd68e4b9fab"/>
@@ -569,6 +571,7 @@
           <topic label="m_nodes" href="structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#a5596ddfae63b67184b7e3d8c8923872d"/>
           <topic label="m_nurbsCurves" href="structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#ac8e6d8c2d41f78345fdf875dd11e1c4a"/>
           <topic label="m_selected" href="structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#a9eed80821f6182b19f26123680cbb6bc"/>
+          <topic label="m_subSamples" href="structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#a4049e7e4b0545ae81099cbbec65d68f4"/>
           <topic label="m_timeCode" href="structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#afc7e41ad7ba4f1019bfc4d28a542647b"/>
           <topic label="m_useTimelineRange" href="structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#ad6d6b361fcf46a7157a9dad4e615489d"/>
         </topic>
@@ -937,6 +940,7 @@
               <topic label="m_nodes" href="structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#a5596ddfae63b67184b7e3d8c8923872d"/>
               <topic label="m_nurbsCurves" href="structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#ac8e6d8c2d41f78345fdf875dd11e1c4a"/>
               <topic label="m_selected" href="structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#a9eed80821f6182b19f26123680cbb6bc"/>
+              <topic label="m_subSamples" href="structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#a4049e7e4b0545ae81099cbbec65d68f4"/>
               <topic label="m_timeCode" href="structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#afc7e41ad7ba4f1019bfc4d28a542647b"/>
               <topic label="m_useTimelineRange" href="structAL_1_1usdmaya_1_1fileio_1_1ExporterParams.html#ad6d6b361fcf46a7157a9dad4e615489d"/>
             </topic>
@@ -1166,6 +1170,7 @@
               <topic label="findTaggedPrims" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#aa83c62e450e7ce1294906f0884eaea4a"/>
               <topic label="findTaggedPrims" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#a745b16666f63880b7bb09e61bddd5c61"/>
               <topic label="getCounts" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#a3145a1567454f694a58809c4a68f4f3b"/>
+              <topic label="getMayaPathFromUsdPrim" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#a1cab9f0d34bf31da99204fa858a213d9"/>
               <topic label="getPrimPathsFromCommaJoinedString" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#ab8c7e5336a46d9801102423c0f97ed98"/>
               <topic label="getRenderAttris" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#a40008dddd3a6a3563577cf030e4d72e1"/>
               <topic label="getRootPrim" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#a211f3625cfd4e43d9b18e32a541db982"/>
@@ -1182,6 +1187,7 @@
               <topic label="parentTransform" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#a621fc84c3fb9b74e7067f8c42d6d7646"/>
               <topic label="primChangedAtPath" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#aa0c729fc518ea2470340db183eb339c1"/>
               <topic label="printRefCounts" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#a9776368b4df85e9ad3dd67cc9b21f891"/>
+              <topic label="recordUsdPrimToMayaPath" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#a7f5cbeb0084b66fb9fdcdd6e0863c5ba"/>
               <topic label="registerEvents" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#ad4d699305724499d8ef60401234bef57"/>
               <topic label="removeAttributeChangedCallback" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#a24823f2f82737c77ee2b705a1dc579d1"/>
               <topic label="removeUsdTransformChain" href="classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html#afd3d6bc44bdc53b72912dfd68e4b9fab"/>
@@ -1349,8 +1355,6 @@
           <topic label="operator()" href="structstd_1_1hash_3_01AL_1_1usdmaya_1_1ProfilerSectionTag_01_4.html#a30d71f332de0744119ff832d28da4fcf"/>
         </topic>
       </topic>
-      <topic label="AL_USDMayaTranslatorProxyShape" href="structAL__USDMayaTranslatorProxyShape.html">
-      </topic>
       <topic label="compare_MDagPath" href="structcompare__MDagPath.html">
         <topic label="operator()" href="structcompare__MDagPath.html#a59c8295252a2503ebf8485a7cac4b6af"/>
       </topic>
@@ -1360,7 +1364,6 @@
     </topic>
     <topic label="Class Index" href="classes.html"/>
     <topic label="Class Hierarchy" href="hierarchy.html">
-      <topic label="AL_USDMayaTranslatorProxyShape" href="structAL__USDMayaTranslatorProxyShape.html"/>
       <topic label="AL::usdmaya::fileio::AnimationCheckTransformAttributes" href="classAL_1_1usdmaya_1_1fileio_1_1AnimationCheckTransformAttributes.html"/>
       <topic label="AL::usdmaya::fileio::AnimationTranslator" href="classAL_1_1usdmaya_1_1fileio_1_1AnimationTranslator.html"/>
       <topic label="AL::usdmaya::cmds::BaseCallbackCommand" href="structAL_1_1usdmaya_1_1cmds_1_1BaseCallbackCommand.html">
@@ -1619,7 +1622,6 @@
                   <topic label="RendererManager.h" href="RendererManager_8h_source.html"/>
                   <topic label="Transform.h" href="Transform_8h_source.html"/>
                   <topic label="TransformationMatrix.h" href="TransformationMatrix_8h_source.html"/>
-                  <topic label="translatorProxyShape.h" href="translatorProxyShape_8h_source.html"/>
                 </topic>
                 <topic label="Api.h" href="Api_8h_source.html"/>
                 <topic label="CodeTimings.h" href="CodeTimings_8h_source.html"/>
