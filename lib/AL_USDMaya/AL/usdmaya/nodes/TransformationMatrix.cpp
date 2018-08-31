@@ -1447,7 +1447,7 @@ MStatus TransformationMatrix::translateTo(const MVector& vector, MSpace::Space s
       // helping the branch predictor
     }
     else
-    if(!pushPrimToMatrix())
+    if(!pushPrimToMatrix() && vector != MVector::zero)
     {
       AL_MAYA_CHECK_ERROR(insertTranslateOp(), "error inserting Translate op");
     }
@@ -1513,7 +1513,7 @@ MStatus TransformationMatrix::scaleTo(const MVector& scale, MSpace::Space space)
       // helping the branch predictor
     }
     else
-    if(!pushPrimToMatrix())
+    if(!pushPrimToMatrix() && scale != MVector::one)
     {
       // rare case: add a new scale op into the prim
       AL_MAYA_CHECK_ERROR(insertScaleOp(), "error inserting Scale op");
@@ -1577,7 +1577,7 @@ MStatus TransformationMatrix::shearTo(const MVector& shear, MSpace::Space space)
       // helping the branch predictor
     }
     else
-    if(!pushPrimToMatrix())
+    if(!pushPrimToMatrix() && shear != MVector::zero)
     {
       // rare case: add a new scale op into the prim
       AL_MAYA_CHECK_ERROR(insertShearOp(), "error inserting Shear op");
@@ -1640,7 +1640,7 @@ MStatus TransformationMatrix::setScalePivot(const MPoint& sp, MSpace::Space spac
     {
     }
     else
-    if(!pushPrimToMatrix())
+    if(!pushPrimToMatrix() && sp != MPoint::origin)
     {
       AL_MAYA_CHECK_ERROR(insertScalePivotOp(), "error inserting ScalePivot op");
     }
@@ -1672,7 +1672,7 @@ MStatus TransformationMatrix::setScalePivotTranslation(const MVector& sp, MSpace
     {
     }
     else
-    if(!pushPrimToMatrix())
+    if(!pushPrimToMatrix() && sp != MVector::zero)
     {
       AL_MAYA_CHECK_ERROR(insertScalePivotTranslationOp(), "error inserting ScalePivotTranslation op");
     }
@@ -1709,7 +1709,7 @@ MStatus TransformationMatrix::setRotatePivot(const MPoint& pivot, MSpace::Space 
     {
     }
     else
-    if(!pushPrimToMatrix())
+    if(!pushPrimToMatrix() && pivot != MPoint::origin)
     {
       AL_MAYA_CHECK_ERROR(insertRotatePivotOp(), "error inserting RotatePivot op");
     }
@@ -1740,7 +1740,7 @@ MStatus TransformationMatrix::setRotatePivotTranslation(const MVector &vector, M
     {
     }
     else
-    if(!pushPrimToMatrix())
+    if(!pushPrimToMatrix() && vector != MPoint::origin)
     {
       AL_MAYA_CHECK_ERROR(insertRotatePivotTranslationOp(), "error inserting RotatePivotTranslation op");
     }
@@ -1808,7 +1808,7 @@ MStatus TransformationMatrix::rotateTo(const MQuaternion &q, MSpace::Space space
     {
     }
     else
-    if(!pushPrimToMatrix())
+    if(!pushPrimToMatrix() && q != MQuaternion::identity)
     {
       AL_MAYA_CHECK_ERROR(insertRotateOp(), "error inserting Rotate op");
     }
@@ -1864,7 +1864,7 @@ MStatus TransformationMatrix::rotateTo(const MEulerRotation &e, MSpace::Space sp
     {
     }
     else
-    if(!pushPrimToMatrix())
+    if(!pushPrimToMatrix() && e != MEulerRotation::identity)
     {
       AL_MAYA_CHECK_ERROR(insertRotateOp(), "error inserting Rotate op");
     }
@@ -1932,7 +1932,7 @@ MStatus TransformationMatrix::setRotateOrientation(const MQuaternion &q, MSpace:
     {
     }
     else
-    if(!pushPrimToMatrix())
+    if(!pushPrimToMatrix() && q != MQuaternion::identity)
     {
       AL_MAYA_CHECK_ERROR(insertRotateAxesOp(), "error inserting RotateAxes op");
     }
@@ -1956,7 +1956,7 @@ MStatus TransformationMatrix::setRotateOrientation(const MEulerRotation& euler, 
     {
     }
     else
-    if(!pushPrimToMatrix())
+    if(!pushPrimToMatrix() && euler != MEulerRotation::identity)
     {
       AL_MAYA_CHECK_ERROR(insertRotateAxesOp(), "error inserting RotateAxes op");
     }
