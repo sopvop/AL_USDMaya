@@ -156,6 +156,7 @@ target_include_directories(
     PUBLIC
     ${PXR_INCLUDE_DIRS}
     ${MAYA_INCLUDE_DIRS}
+    ${USD_MAYA_INCLUDE_DIR}
 )
 
 set(Boost_LINK_LIBRARIES
@@ -186,7 +187,7 @@ target_link_libraries(${LIBRARY_NAME}
     usdUtils
     usdImaging
     usdImagingGL
-    usdMaya
+    ${USD_MAYA_LIBRARY}
     vt
     ${Boost_LINK_LIBRARIES}
     ${MAYA_Foundation_LIBRARY}
