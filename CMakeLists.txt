@@ -63,10 +63,14 @@ set(NEED_BOOST_FILESYSTEM ON)
 
 if(WIN32)
     set(CMAKE_CXX_FLAGS
+        ${CMAKE_CXX_FLAGS}
+        -std=c++11
+        /WX
         "${_PXR_CXX_FLAGS}"
     )
 else()
     set(CMAKE_CXX_FLAGS
+        ${CMAKE_CXX_FLAGS}
         -std=c++11
         -msse3
         "${_PXR_CXX_FLAGS}"
@@ -103,7 +107,7 @@ add_subdirectory(utils)
 add_subdirectory(usdutils)
 if(NOT SKIP_USDMAYA_TESTS)
 	add_subdirectory(mayatest)
-endif()	
+endif()
 add_subdirectory(mayautils)
 add_subdirectory(usdmayautils)
 add_subdirectory(usdtransaction)
