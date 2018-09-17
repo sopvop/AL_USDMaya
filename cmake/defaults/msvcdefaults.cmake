@@ -26,9 +26,7 @@
 set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /EHsc")
 
 # Standards compliant.
-set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /Zc:rvalueCast \
-                                      /Zc:strictStrings \
-                                      /Zc:inline")
+set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /Zc:rvalueCast /Zc:strictStrings /Zc:inline")
 
 # Turn on all but informational warnings.
 set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /W3")
@@ -54,7 +52,7 @@ _disable_warning("4506")
 # XXX:figure out why we need this
 _disable_warning("4091")
 
-# c:\python27\include\pymath.h(22): warning C4273: 'round': inconsistent dll linkage 
+# c:\python27\include\pymath.h(22): warning C4273: 'round': inconsistent dll linkage
 # XXX:figure out real fix
 _disable_warning("4273")
 
