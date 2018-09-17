@@ -1,4 +1,4 @@
-#This is a modified version of the cmake file from usd/sdk/maya/CMakeLists.txt 
+#This is a modified version of the cmake file from usd/sdk/maya/CMakeLists.txt
 cmake_minimum_required(VERSION 2.8.12)
 project(AL_USDMaya)
 
@@ -26,7 +26,7 @@ add_definitions(${_PXR_CXX_DEFINITIONS})
 find_package(Maya REQUIRED)
 
 if(CMAKE_WANT_UFE_BUILD)
-    add_definitions(-DWANT_UFE_BUILD)	
+    add_definitions(-DWANT_UFE_BUILD)
     message(STATUS "UFE Build Enabled")
     if (NOT UFE_VERSION)
         message(FATAL_ERROR "UFE_VERSION must be defined when WANT_UFE_BUILD is enabled")
@@ -68,10 +68,14 @@ set(NEED_BOOST_FILESYSTEM ON)
 
 if(WIN32)
     set(CMAKE_CXX_FLAGS
+        ${CMAKE_CXX_FLAGS}
+        -std=c++11
+        /WX
         "${_PXR_CXX_FLAGS}"
     )
 else()
     set(CMAKE_CXX_FLAGS
+        ${CMAKE_CXX_FLAGS}
         -std=c++11
         -msse3
         "${_PXR_CXX_FLAGS}"
@@ -107,7 +111,7 @@ add_subdirectory(utils)
 add_subdirectory(usdutils)
 if(NOT SKIP_USDMAYA_TESTS)
 	add_subdirectory(mayatest)
-endif()	
+endif()
 add_subdirectory(mayautils)
 add_subdirectory(usdmayautils)
 
