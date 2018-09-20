@@ -590,7 +590,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
             return false;
         }
 
-        Ufe::Selection dstSelection; // Only used for kReplaceList
+        Ufe::Selection dstSelection; // Only used for kReplaceList or kAddToHeadOfList
                                      // Get the paths
         if (paths.size())
         {
@@ -607,6 +607,9 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
                 switch (mode)
                 {
                 case MGlobal::kReplaceList:
+                // TODO: improve if Ufe::Selection ever gets some form of prepend or
+                // insert method. For now, we have to create a new list, then replace.
+                case MGlobal::kAddToHeadOfList:
                 {
                     // Add the sceneItem to dstSelection
                     dstSelection.append(si);
@@ -637,6 +640,19 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
             if (mode == MGlobal::kReplaceList) {
                 // Add to Global selection
                 Ufe::GlobalSelection::get()->replaceWith(dstSelection);
+            }
+            // TODO: improve if Ufe::Selection ever gets some form of prepend or
+            // insert method. For now, we have to create a new list, then replace.
+            else if (mode == MGlobal::kAddToHeadOfList)
+            {
+                auto globalSelection = Ufe::GlobalSelection::get();
+                // Add all the old items after the new items
+                for (auto& oldItem : *globalSelection)
+                {
+                    dstSelection.append(oldItem);
+                }
+                // Add to Global selection
+                globalSelection->replaceWith(dstSelection);
             }
         }
     }
