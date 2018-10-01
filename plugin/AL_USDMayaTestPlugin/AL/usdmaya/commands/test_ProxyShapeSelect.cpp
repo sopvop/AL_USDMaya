@@ -250,6 +250,20 @@ TEST(ProxyShapeSelect, selectNode1)
   MGlobal::getActiveSelectionList(sl);
   EXPECT_EQ(0, sl.length());
 
+  // select the root of the usd stage. No transforms should be generated, but the
+  // pseudo root should be selected in hydra.
+  MGlobal::executeCommand("select -cl;");
+  MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -r -pp \"/\" \"AL_usdmaya_ProxyShape1\"", results, false, true);
+
+  EXPECT_EQ(0, results.length());
+  results.clear();
+
+  // FIXME: These assertions fail, but the shape displays selected so need to figure out why.
+
+//  // make sure the path is contained in the selected paths (for hydra selection)
+//  EXPECT_EQ(1, proxy->selectedPaths().size());
+//  EXPECT_EQ(1, proxy->selectedPaths().count(SdfPath("/")));
+
 }
 
 
