@@ -259,6 +259,83 @@ void MeshImportContext::gatherFaceConnectsAndVertices()
       }
     }
   }
+  else
+  {
+    // check for cases where data is left handed.
+    // Maya fails
+    TfToken orientation;
+    bool leftHanded = (mesh.GetOrientationAttr().Get(&orientation, m_timeCode) && orientation == UsdGeomTokens->leftHanded);
+    if(leftHanded)
+    {
+      size_t numPoints = pointData.size();
+      size_t numFaces = faceVertexCounts.size();
+      std::vector<GfVec3f> tempNormals(numPoints, GfVec3f(0, 0, 0));
+
+      const GfVec3f* const ptemp = (const GfVec3f*)pointData.cdata();
+      GfVec3f* const pnorm = (GfVec3f*)tempNormals.data();
+      const int32_t* pcounts = (const int32_t*)faceVertexCounts.cdata();
+      const int32_t* pconnects = (const int32_t*)faceVertexIndices.cdata();
+
+      // compute each face normal, and add into the array of vertex normals.
+      for(size_t i = 0, offset = 0; i < numFaces; ++i)
+      {
+        int32_t nverts = pcounts[i];
+        const int32_t* pface =  pconnects + offset;
+
+        offset += nverts;
+
+        // grab first two points & normals, and compute edge.
+        GfVec3f v0 = ptemp[pface[0]];
+        GfVec3f v1 = ptemp[pface[1]];
+        GfVec3f n0 = pnorm[pface[0]];
+        GfVec3f n1 = pnorm[pface[1]];
+        GfVec3f n2;
+        GfVec3f e1 = v1 - v0;
+
+        // loop through each triangle in face
+        for(int32_t j = 2; j < nverts; ++j)
+        {
+          // compute last edge in tri (will have previous edge from last iteration)
+          const GfVec3f v2 = ptemp[pface[j]];
+          n2 = pnorm[pface[j]];
+          GfVec3f e2 = v2 - v0;
+
+          // compute triangle normal
+          GfVec3f fn = GfCross(e2, e1);
+          n0 += fn;
+          n1 += fn;
+          n2 += fn;
+
+          // write summed normal (with original value) back into array
+          pnorm[pface[j - 1]] = n1;
+
+          // for next iteration
+          n1 = n2;
+          e1 = e2;
+        }
+
+        // write back first and last normal
+        pnorm[pface[0]] = n0;
+        pnorm[pface[nverts-1]] = n2;
+      }
+
+      // normalise each normal in the array
+      for(size_t j = 0; j < numPoints; ++j)
+      {
+        pnorm[j] = GfGetNormalized(pnorm[j]);
+      }
+
+      // now expand array into a set of vertex-face normals
+      {
+        normals.setLength(connects.length());
+        for(uint32_t i = 0, nf = connects.length(); i < nf; ++i)
+        {
+          int index = connects[i];
+          normals[i] = MVector(pnorm[index][0], pnorm[index][1], pnorm[index][2]);
+        }
+      }
+    }
+  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -443,7 +520,7 @@ bool MeshImportContext::applyVertexNormals()
     MIntArray normalsFaceIds;
     normalsFaceIds.setLength(connects.length());
     int32_t* normalsFaceIdsPtr = &normalsFaceIds[0];
-    if (normals.length() == fnMesh.numFaceVertices())
+    if (normals.length() == uint32_t(fnMesh.numFaceVertices()))
     {
       for (uint32_t i = 0, k = 0, n = counts.length(); i < n; i++)
       {
@@ -1229,18 +1306,6 @@ void zipUVs(const float* u, const float* v, float* uv, const size_t count)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-static void reverseIndices(VtArray<int32_t>& indices, const MIntArray& counts)
-{
-  auto iter = indices.begin();
-  for (uint32_t i = 0, len = counts.length(); i < len; ++i)
-  {
-    int32_t cnt = counts[i];
-    std::reverse(iter, iter + cnt);
-    iter += cnt;
-  }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 void MeshExportContext::copyUvSetData()
 {
   UsdPrim prim = mesh.GetPrim();
@@ -1992,20 +2057,22 @@ void MeshExportContext::copyVertexData(UsdTimeCode time)
 {
   if(diffGeom & kPoints)
   {
-    UsdAttribute pointsAttr = mesh.GetPointsAttr();
-    MStatus status;
-    const uint32_t numVertices = fnMesh.numVertices();
-    VtArray<GfVec3f> points(numVertices);
-    const float* pointsData = fnMesh.getRawPoints(&status);
-    if(status)
+    if(UsdAttribute pointsAttr = mesh.GetPointsAttr())
     {
-      memcpy((GfVec3f*)points.data(), pointsData, sizeof(float) * 3 * numVertices);
+      MStatus status;
+      const uint32_t numVertices = fnMesh.numVertices();
+      VtArray<GfVec3f> points(numVertices);
+      const float* pointsData = fnMesh.getRawPoints(&status);
+      if(status)
+      {
+        memcpy((GfVec3f*)points.data(), pointsData, sizeof(float) * 3 * numVertices);
 
-      pointsAttr.Set(points, time);
-    }
-    else
-    {
-      MGlobal::displayError(MString("Unable to access mesh vertices on mesh: ") + fnMesh.fullPathName());
+        pointsAttr.Set(points, time);
+      }
+      else
+      {
+        MGlobal::displayError(MString("Unable to access mesh vertices on mesh: ") + fnMesh.fullPathName());
+      }
     }
   }
 }
@@ -2015,32 +2082,34 @@ void MeshExportContext::copyNormalData(UsdTimeCode time)
 {
   if(diffGeom & kNormals)
   {
-    UsdAttribute normalsAttr = mesh.GetNormalsAttr();
-    MStatus status;
-    const uint32_t numNormals = fnMesh.numNormals();
-    const float* normalsData = fnMesh.getRawNormals(&status);
-    if(status && numNormals)
+    if(UsdAttribute normalsAttr = mesh.GetNormalsAttr())
     {
-      // if prim vars are all identical, we have a constant value
-      if(usd::utils::vec3AreAllTheSame(normalsData, numNormals))
+      MStatus status;
+      const uint32_t numNormals = fnMesh.numNormals();
+      const float* normalsData = fnMesh.getRawNormals(&status);
+      if(status && numNormals)
       {
-        VtArray<GfVec3f> normals(1);
-        mesh.SetNormalsInterpolation(UsdGeomTokens->constant);
-        normals[0][0] = normalsData[0];
-        normals[0][1] = normalsData[1];
-        normals[0][2] = normalsData[2];
+        // if prim vars are all identical, we have a constant value
+        if(usd::utils::vec3AreAllTheSame(normalsData, numNormals))
+        {
+          VtArray<GfVec3f> normals(1);
+          mesh.SetNormalsInterpolation(UsdGeomTokens->constant);
+          normals[0][0] = normalsData[0];
+          normals[0][1] = normalsData[1];
+          normals[0][2] = normalsData[2];
+        }
+        else
+        {
+          VtArray<GfVec3f> normals(numNormals);
+          mesh.SetNormalsInterpolation(UsdGeomTokens->faceVarying);
+          memcpy((GfVec3f*)normals.data(), normalsData, sizeof(float) * 3 * numNormals);
+          normalsAttr.Set(normals, time);
+        }
       }
       else
       {
-        VtArray<GfVec3f> normals(numNormals);
-        mesh.SetNormalsInterpolation(UsdGeomTokens->faceVarying);
-        memcpy((GfVec3f*)normals.data(), normalsData, sizeof(float) * 3 * numNormals);
-        normalsAttr.Set(normals, time);
+        MGlobal::displayError(MString("Unable to access mesh normals on mesh: ") + fnMesh.fullPathName());
       }
-    }
-    else
-    {
-      MGlobal::displayError(MString("Unable to access mesh normals on mesh: ") + fnMesh.fullPathName());
     }
   }
 }

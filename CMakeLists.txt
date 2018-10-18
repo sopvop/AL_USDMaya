@@ -18,8 +18,7 @@ include(${USD_CONFIG_FILE})
 # to get PYTHON_EXECUTABLE
 find_package(PythonInterp)
 
-include(ProjectDefaults)
-include(Public)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include(CXXDefaults)
 
 add_definitions(${_PXR_CXX_DEFINITIONS})
@@ -54,6 +53,7 @@ set(NEED_BOOST_FILESYSTEM ON)
 if(WIN32)
     set(CMAKE_CXX_FLAGS
         -std=c++11
+        /WX
         "${_PXR_CXX_FLAGS}"
     )
 else()
@@ -69,7 +69,6 @@ set(CMAKE_VERBOSE_MAKEFILE OFF)
 
 option(BUILD_USDMAYA_SCHEMAS "Build optional schemas." ON)
 option(BUILD_USDMAYA_TRANSLATORS "Build optional translators." ON)
-option(VALIDATE_GENERATED_SCHEMAS "Generate schemas code and compare." OFF)
 option(SKIP_USDMAYA_TESTS "Build tests" OFF)
 
 if(NOT SKIP_USDMAYA_TESTS)

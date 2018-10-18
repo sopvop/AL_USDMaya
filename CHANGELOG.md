@@ -1,3 +1,121 @@
+## v0.29.1 (2018-08-28)
+
+### Added
+
+* Sub-sample animation export
+
+### Changed
+
+- Only perform UsdImagingGLHdEngine creation when it is Maya interactive mode.
+- Issue error in console when some nodes cannot be created in the transform chain, at which case usdMaya will go and parent the chain created right under the proxy transform.
+* Built against USD-0.18.9
+* Plugins' metadata (`plugInfo.json`) have been moved to **lib/usd** to reflect USD's new layout.
+* The initial edit target of proxyShapes has changed from the root layer to the session layer (#102 - @nxkb)
+* The mapping from prim to maya dag path is no longer stored on the session layer, but is stored on the proxyShape class (#102 - @nxkb)
+* Made translatorProxyShape into a completely separate plugin, AL_USDMayaPxrTranslators (#109 - @elrond79)
+* This sandboxes the main AL_USDMayaPlugin from needing to link against any pixar maya libraries (ie, usdMaya) (#109 - @elrond79)
+* Also added a cmake option to disable building of the plugin entirely, BUILD_USDMAYA_PXR_TRANSLATORS (#109 - @elrond79)
+* Updated FindUSD.cmake to enable finding of usdMaya (#109 - @elrond79)
+
+### Fixed
+
+* Fix for opensource tests
+* Cameras not exported on file -> export
+* Win32 build error
+* Fixed some runtime linkage problems with the main AL_USDMayaPlugin.so and usdMaya.so (#109 - @elrond79)
+* Fixed warning about signed/unsigned comparsion (#110 - @elrond79)
+* Fixed warning about unused errorString (#110 - @elrond79)
+
+## v0.29.0 (2018-08-06)
+
+### Added
+
+* struct MayaFnTypeId to uniquely identify Maya object types.
+* TranslatorAbstract::supportedMayaTypes() returns a vector of Maya object types supported by this translator.
+* TranslatorAbstract::claimMayaObjectExporting() provides a place for translator to confirm it wants to export this Maya object.
+* TranslatorAbstract::exportObject() interface for translator to pull data from Maya object and fill into Usd prim.
+* overloading TranslatorManufacture::get() returns all translator candidates for a Maya object type.
+* UsdMaya translator for AL_usdmaya_ProxyShape (#99 - @nxkb)
+* Support for files that are not on disk until they are resolved (#100 - @nxkb)
+* Added new Pre/PostDestroyProxyShape events (#104 @elron79)
+
+### Changed
+
+* TranslatorAbstract::import(), a third parameter is added to pass out Maya object created in importing process. This interface will be used in both AL_usdmaya_Import and AL_usdmaya_ProxyShapeImport workflows and TranslatorContext need be checked before using.
+* A third argument is added to macro AL_USDMAYA_DEFINE_TRANSLATOR. It must be an array of MayaFnTypeId which defines all Maya object types this translator might export.
+* Selection(is stored preFileSave() in a MSelectionList, not storing AL_USD proxies (#78 - @wnxntn)
+* Selection is restored postFileSave() (#78 - @wnxntn)
+
+### Removed
+
+* fileio/translators/MeshTranslator
+* fileio/translators/NurbsCurveTranslator
+* fileio/translators/CameraTranslator
+* Removed some EXPORT macros from inline methods (no need to export)
+
+### Fixed
+* A number of compiler warnings fixed, so PXR_STRICT_BUILD_MODE may be used (#97 - @elron79)
+* added missing triggers for Pre/PostStageLoaded events (#103 - @elron79)
+
+## v0.28.5 (2018-07-10)
+
+### Added
+
+* New open-source ALFrameRange schema and translator, which sets up Maya time range and current frame during the translation.
+* Tests for ALFrameRange translator.
+* Tests for the fix for the over-decref issue in transform chain.
+
+### Fixed
+
+* Over-decref in transform chain during some prim tear-down.
+
+## v0.28.4 (2018-07-05)
+
+### Added
+
+* New events to prevent USDGlimpse from rebuilding the scene when mapping meta data is inserted into the prims during selection.
+
+### Changed
+
+* Transform values that have not changed no longer get written back to USD.
+* Only hook up the proxy shape time attribute to the transform nodes that are actually transforms (i.e. ignore prims that are effectively just organisational containers)
+* Allowed named events to be able to have callbacks registered against them prior to the events being registered
+
+### Removed
+
+* Some export macros from inline methods
+
+### Fixed
+
+* Regression where transform values were no longer being correctly displayed when translating prims into maya.
+* A number of build warnings in the OSS build
+* Final two build warnings in the repo. The generated schema code needs to have a flag set in the build C4099 to hide the 'class defined as struct' warning (pixar issue, not ours)
+* When you duplicate a proxy shape, you wont see anything in the viewport and it wont be fully initialize until you reopen maya or find a hack (like changing the usd path) to trigger a load stage. (#98 - @nxkb)
+* Add missing newlines to some TF_DEBUG statements in ProxyShapeUI (#92 - @elrond79)
+
+## v0.28.3 (2018-06-18)
+
+### Added
++ AL_usdmaya_CreateUsdPrim command added to insert a new prim into the UsdStage of a proxy shape. 
+
+### Changed
++ The proxyShape outStageData is now connectable, and now longer hidden. Allows for manual DG node connections to be made. 
+
+### Fixed
++ The internal mapping between a maya object and a prim now works correctly when specifying the -name flag of AL_usdmaya_ProxyShapeImport. 
+
+## v0.28.2 (2018-06-14)
+
+### Added
++ Viewport will continue to refresh to show updated progressive renderers (like embree) until converged (#91 - @elrond79)
+
+### Changed
++ make getRenderAttris update showRender, as well as showGuides (#87 - @elrond79)
+
+### Fixed
++ Tweaks to allow builds to work with just rpath. (#88 - @elrond79)
++ When importing left handed geometry that has no normals, compute the correct set of inverted normals.
+
 ## v0.28.1 (2018-06-06)
 
 ### Added

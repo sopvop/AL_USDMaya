@@ -169,7 +169,7 @@ bool RendererManager::setInternalValue(const MPlug& plug, const MDataHandle& dat
   if (plug == m_rendererPlugin)
   {
     short index = dataHandle.asShort();
-    if (index >= 0 && index < m_rendererPluginsNames.length())
+    if (index >= 0 && index < short(m_rendererPluginsNames.length()))
     {
       MPlug plug(thisMObject(), m_rendererPluginName);
       plug.setString(m_rendererPluginsNames[index]);
@@ -238,7 +238,7 @@ void RendererManager::changeRendererPlugin(ProxyShape* proxy, bool creation)
       if (rendererId == 0 && creation)
         return;
       
-      assert(rendererId < m_rendererPluginsTokens.size());
+      assert(static_cast<size_t>(rendererId) < m_rendererPluginsTokens.size());
       TfToken plugin = m_rendererPluginsTokens[rendererId];
       if (!proxy->engine()->SetRendererPlugin(plugin))
       {

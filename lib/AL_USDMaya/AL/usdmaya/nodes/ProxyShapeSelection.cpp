@@ -551,26 +551,34 @@ MObject ProxyShape::makeUsdTransformChain(
     node = modifier.createNode(AL::maya::utils::convert(transformType), parentNode);
     isTransform = false;
     isUsdTransform = false;
-    TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShape::makeUsdTransformChain created transformType=%s name=%s\n", transformType.c_str(), usdPrim.GetName().GetText());
   }
   else
   {
     node = modifier.createNode(Transform::kTypeId, parentNode);
-    TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShape::makeUsdTransformChain created transformType = AL_usdmaya_Transform name=%s\n", usdPrim.GetName().GetText());
+    transformType = "AL_usdmaya_Transform";
   }
 
-  fn.setObject(node);
+  if(fn.setObject(node))
+  {
+     TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShape::makeUsdTransformChain created transformType=%s name=%s\n",
+                                       transformType.c_str(),
+                                       usdPrim.GetName().GetText());
+  }
+  else
+  {
+    MString err;
+    err.format("USDMaya is unable to create the node with transformType=^1s, name=^2s.",
+              transformType.c_str(),
+              usdPrim.GetName().GetText());
+    MGlobal::displayError(err);
+  }
+
   fn.setName(AL::maya::utils::convert(usdPrim.GetName().GetString()));
 
-  //Retrieve the proxy shapes transform path which will be used in the UsdPrim->MayaNode mapping in the case where there is delayed node creation.
-  MFnDagNode shapeFn(thisMObject());
-  const MObject shapeParent = shapeFn.parent(0);
-  MDagPath mayaPath;
-  MDagPath::getAPathTo(shapeParent, mayaPath);
   if(resultingPath)
-    *resultingPath = AL::usdmaya::utils::mapUsdPrimToMayaNode(usdPrim, node, &mayaPath);
+    *resultingPath = recordUsdPrimToMayaPath(usdPrim, node);
   else
-    AL::usdmaya::utils::mapUsdPrimToMayaNode(usdPrim, node, &mayaPath);
+    recordUsdPrimToMayaPath(usdPrim, node);
 
   if(isUsdTransform)
   {
@@ -578,8 +586,6 @@ MObject ProxyShape::makeUsdTransformChain(
     MPlug inStageData = ptrNode->inStageDataPlug();
     MPlug inTime = ptrNode->timePlug();
 
-    modifier.connect(outStage, inStageData);
-    modifier.connect(outTime, inTime);
 
     if(modifier2)
     {
@@ -600,6 +606,12 @@ MObject ProxyShape::makeUsdTransformChain(
       MPlug(node, MPxTransform::shearXY).setLocked(true);
       MPlug(node, MPxTransform::shearXZ).setLocked(true);
       MPlug(node, MPxTransform::shearYZ).setLocked(true);
+    }
+    else
+    {
+      // only connect time and stage if transform can change
+      modifier.connect(outTime, inTime);
+      modifier.connect(outStage, inStageData);
     }
 
     // set the primitive path
@@ -1010,6 +1022,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
   auto stage = m_stage;
   if(!stage)
     return false;
+  triggerEvent("SelectionStarted");
 
   m_pleaseIgnoreSelection = true;
   prepSelect();
@@ -1054,6 +1067,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
       if(keepPrims.empty() && insertPrims.empty())
       {
         m_pleaseIgnoreSelection = false;
+        triggerEvent("SelectionEnded");
         return false;
       }
 
@@ -1154,6 +1168,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
       if(prims.empty())
       {
         m_pleaseIgnoreSelection = false;
+        triggerEvent("SelectionEnded");
         return false;
       }
 
@@ -1262,6 +1277,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
   }
 
   m_pleaseIgnoreSelection = false;
+  triggerEvent("SelectionEnded");
   return true;
 }
 

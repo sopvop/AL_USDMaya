@@ -390,20 +390,17 @@ public:
 
   /// \brief  returns the event type string
   /// \return "maya"
-  AL_MAYA_EVENTS_PUBLIC
   const char* eventTypeString() const override
     { return "maya"; }
 
   /// \brief  returns the event scheduler
   /// \return the event scheduler used for these maya events
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::EventScheduler* scheduler() const
     { return m_scheduler; }
 
   /// \brief  queries the maya event information for the specified maya event
   /// \param  event the event ID
   /// \return a pointer to the maya event information (or null for an invalid event)
-  AL_MAYA_EVENTS_PUBLIC
   const MayaCallbackInfo* getEventInfo(const AL::event::EventId event) const
   {
     const auto it = m_eventMapping.find(event);
@@ -414,7 +411,6 @@ public:
   /// \brief  queries whether the event has an associated MCallbackId (indicating the callback is active with maya)
   /// \param  event the event to query
   /// \return true if callback is active with maya, false otherwise
-  AL_MAYA_EVENTS_PUBLIC
   bool isMayaCallbackRegistered(const AL::event::EventId event) const
   {
     const MayaCallbackInfo* cbi = getEventInfo(event);
@@ -424,7 +420,6 @@ public:
   /// \brief  queries the maya event information for the specified maya event
   /// \param  eventName the event name
   /// \return a pointer to the maya event information (or null for an invalid event)
-  AL_MAYA_EVENTS_PUBLIC
   const MayaCallbackInfo* getEventInfo(const char* const eventName) const
   {
     const AL::event::EventDispatcher* const dispatcher = m_scheduler->event(eventName);
@@ -438,7 +433,6 @@ public:
   /// \brief  queries whether the event has an associated MCallbackId (indicating the callback is active with maya)
   /// \param  eventName the event to query
   /// \return true if callback is active with maya, false otherwise
-  AL_MAYA_EVENTS_PUBLIC
   bool isMayaCallbackRegistered(const char* const eventName) const
   {
     const MayaCallbackInfo* cbi = getEventInfo(eventName);
@@ -513,13 +507,11 @@ public:
   static MayaEventManager& instance();
 
   /// \brief  returns the global maya event manager instance
-  AL_MAYA_EVENTS_PUBLIC
   static void freeInstance()
     { delete g_instance; g_instance = 0; }
 
   /// \brief  constructor
   /// \param  mayaEvents the custom event handler
-  AL_MAYA_EVENTS_PUBLIC
   MayaEventManager(MayaEventHandler* mayaEvents)
     : m_mayaEvents(mayaEvents) { g_instance = this; }
 
@@ -530,7 +522,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MBasicFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kBasicFunction, eventName, tag, weight, userData); }
 
@@ -541,7 +532,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MElapsedTimeFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kElapsedTimeFunction, eventName, tag, weight, userData); }
 
@@ -552,7 +542,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MCheckFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kCheckFunction, eventName, tag, weight, userData); }
 
@@ -563,7 +552,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MCheckFileFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kCheckFileFunction, eventName, tag, weight, userData); }
 
@@ -574,7 +562,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MCheckPlugFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kCheckPlugFunction, eventName, tag, weight, userData); }
 
@@ -585,7 +572,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MComponentFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kComponentFunction, eventName, tag, weight, userData); }
 
@@ -596,7 +582,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MNodeFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kNodeFunction, eventName, tag, weight, userData); }
 
@@ -607,7 +592,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MStringFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kStringFunction, eventName, tag, weight, userData); }
 
@@ -618,7 +602,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MTwoStringFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kTwoStringFunction, eventName, tag, weight, userData); }
 
@@ -629,7 +612,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MThreeStringFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kThreeStringFunction, eventName, tag, weight, userData); }
 
@@ -640,7 +622,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MStringIntBoolIntFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kStringIntBoolIntFunction, eventName, tag, weight, userData); }
 
@@ -651,7 +632,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MStringIndexFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kStringIndexFunction, eventName, tag, weight, userData); }
 
@@ -662,7 +642,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MNodeStringBoolFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kNodeStringBoolFunction, eventName, tag, weight, userData); }
 
@@ -673,7 +652,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MStateFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kStateFunction, eventName, tag, weight, userData); }
 
@@ -684,7 +662,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MTimeFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kTimeFunction, eventName, tag, weight, userData); }
 
@@ -695,7 +672,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MPlugFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kPlugFunction, eventName, tag, weight, userData); }
 
@@ -706,7 +682,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MNodePlugFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kNodePlugFunction, eventName, tag, weight, userData); }
 
@@ -717,7 +692,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MNodeStringFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kNodeStringFunction, eventName, tag, weight, userData); }
 
@@ -728,7 +702,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MParentChildFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kParentChildFunction, eventName, tag, weight, userData); }
 
@@ -739,7 +712,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MModifierFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kModifierFunction, eventName, tag, weight, userData); }
 
@@ -750,7 +722,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MStringArrayFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kStringArrayFunction, eventName, tag, weight, userData); }
 
@@ -761,7 +732,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MNodeModifierFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kNodeModifierFunction, eventName, tag, weight, userData); }
 
@@ -772,7 +742,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MObjArray func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kObjArrayFunction, eventName, tag, weight, userData); }
 
@@ -783,7 +752,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MNodeObjArray func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kNodeObjArrayFunction, eventName, tag, weight, userData); }
 
@@ -794,7 +762,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MStringNode func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kStringNodeFunction, eventName, tag, weight, userData); }
 
@@ -805,7 +772,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MCameraLayerFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kCameraLayerFunction, eventName, tag, weight, userData); }
 
@@ -816,7 +782,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MCameraLayerCameraFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kCameraLayerCameraFunction, eventName, tag, weight, userData); }
 
@@ -827,7 +792,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MConnFailFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kConnFailFunction, eventName, tag, weight, userData); }
 
@@ -838,7 +802,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MPlugsDGModFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kPlugsDGModFunction, eventName, tag, weight, userData); }
 
@@ -849,7 +812,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MNodeUuidFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kNodeUuidFunction, eventName, tag, weight, userData); }
 
@@ -860,7 +822,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MCheckNodeUuidFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kCheckNodeUuidFunction, eventName, tag, weight, userData); }
 
@@ -871,7 +832,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MObjectFileFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kObjectFileFunction, eventName, tag, weight, userData); }
 
@@ -882,7 +842,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MCheckObjectFileFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kCheckObjectFileFunction, eventName, tag, weight, userData); }
 
@@ -893,7 +852,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MMessage::MRenderTileFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kRenderTileFunction, eventName, tag, weight, userData); }
 
@@ -904,7 +862,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MCommandMessage::MMessageFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kMessageFunction, eventName, tag, weight, userData); }
 
@@ -915,7 +872,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MCommandMessage::MMessageFilterFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kMessageFilterFunction, eventName, tag, weight, userData); }
 
@@ -926,7 +882,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MDagMessage::MMessageParentChildFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kMessageParentChildFunction, eventName, tag, weight, userData); }
 
@@ -937,7 +892,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MDagMessage::MWorldMatrixModifiedFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kWorldMatrixModifiedFunction, eventName, tag, weight, userData); }
 
@@ -948,7 +902,6 @@ public:
   /// \param  weight the weight (lower weights at executed before higher weights)
   /// \param  userData custom user data pointer
   /// \return the callback id
-  AL_MAYA_EVENTS_PUBLIC
   AL::event::CallbackId registerCallback(MPaintMessage::MPathObjectPlugColorsFunction func, const char* const eventName, const char* const tag, uint32_t weight, void* userData = 0)
     { return registerCallbackInternal((void*)func, MayaCallbackType::kPathObjectPlugColoursFunction, eventName, tag, weight, userData); }
 

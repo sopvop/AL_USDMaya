@@ -231,6 +231,7 @@ struct FindLockedPrimsLogic
 };
 
 typedef const HierarchyIterationLogic*  HierarchyIterationLogics[3];
+typedef std::unordered_map<SdfPath, MString, SdfPath::Hash > PrimPathToDagPath;
 
 extern AL::event::EventId kPreClearStageCache;
 extern AL::event::EventId kPostClearStageCache;
@@ -250,6 +251,7 @@ class ProxyShape
   friend struct SelectionUndoHelper;
   friend class ProxyShapeUI;
   friend class StageReloadGuard;
+  friend class ProxyDrawOverride;
 public:
 
   // returns the shape's parent transform
@@ -537,7 +539,6 @@ public:
   void printRefCounts() const;
 
   /// \brief  destroys all internal transform references
-  AL_USDMAYA_PUBLIC
   void destroyTransformReferences()
     { m_requiredPaths.clear(); }
 
@@ -609,6 +610,20 @@ public:
   AL_USDMAYA_PUBLIC
   void deserialiseTranslatorContext();
 
+  /// \brief  gets the maya node path for a prim, stores the mapping and returns it
+  /// \param  usdPrim the prim we are bringing in to maya
+  /// \param  mayaObject the corresponding maya node
+  /// \return  a dag path to the maya object
+  AL_USDMAYA_PUBLIC
+  MString recordUsdPrimToMayaPath(const UsdPrim &usdPrim,
+                                  const MObject &mayaObject);
+
+  /// \brief  returns the stored maya node path for a prim
+  /// \param  usdPrim a prim that has been brought into maya
+  /// \return  a dag path to the maya object
+  AL_USDMAYA_PUBLIC
+  MString getMayaPathFromUsdPrim(const UsdPrim& usdPrim);
+
   /// \brief aggregates logic that needs to iterate through the hierarchy looking for properties/metdata on prims
   AL_USDMAYA_PUBLIC
   void findTaggedPrims();
@@ -630,7 +645,6 @@ public:
 
   /// \brief  returns the plugin translator registry assigned to this shape
   /// \return the translator registry
-  AL_USDMAYA_PUBLIC
   fileio::translators::TranslatorManufacture& translatorManufacture()
     { return m_translatorManufacture; }
 
@@ -689,7 +703,6 @@ public:
   ///         has been specified, the pseudo root will be passed to UsdImaging
   /// \return the prim specified by the user (if valid), the pseudo root if no prim has been specified, or a NULL
   ///         prim if the stage is invalid.
-  AL_USDMAYA_PUBLIC
   UsdPrim getRootPrim()
     {
       if(m_stage)
@@ -783,7 +796,6 @@ public:
 
   /// \brief  provides access to the selection list on this proxy shape
   /// \return the internal selection list
-  AL_USDMAYA_PUBLIC
   SelectionList& selectionList()
     { return m_selectionList; }
 
@@ -799,7 +811,6 @@ public:
 
   /// \brief Returns the SelectionDatabase owned by the ProxyShape
   /// \return A constant SelectableDB owned by the ProxyShape
-  AL_USDMAYA_PUBLIC
   const AL::usdmaya::SelectabilityDB& selectabilityDB() const
     { return const_cast<ProxyShape*>(this)->selectabilityDB(); }
 
@@ -837,6 +848,10 @@ public:
   /// \return the separated list of paths
   AL_USDMAYA_PUBLIC
   SdfPathVector getPrimPathsFromCommaJoinedString(const MString &paths) const;
+
+  /// \brief  Returns the selection mask of the shape
+  AL_USDMAYA_PUBLIC
+  MSelectionMask getShapeSelectionMask() const override;
 
 private:
 
@@ -1016,6 +1031,7 @@ private:
   FindUnselectablePrimsLogic m_findUnselectablePrims;
   SdfPathHashSet m_selectedPaths;
   FindLockedPrimsLogic m_findLockedPrims;
+  PrimPathToDagPath m_primPathToDagPath;
   std::vector<SdfPath> m_paths;
   std::vector<UsdPrim> m_prims;
   TfNotice::Key m_objectsChangedNoticeKey;
