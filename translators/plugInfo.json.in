@@ -6,13 +6,16 @@
                     "AL::usdmaya::fileio::translators::MayaReference": {
                         "bases": ["AL::usdmaya::fileio::translators::TranslatorBase"]
                     },
-                    "AL::usdmaya::fileio::translators::CameraTranslator": {
+                    "AL::usdmaya::fileio::translators::Camera": {
                         "bases": ["AL::usdmaya::fileio::translators::TranslatorBase"]
                     },
                     "AL::usdmaya::fileio::translators::Mesh": {
                         "bases": ["AL::usdmaya::fileio::translators::TranslatorBase"]
                     },
                     "AL::usdmaya::fileio::translators::NurbsCurve": {
+                        "bases": ["AL::usdmaya::fileio::translators::TranslatorBase"]
+                    },
+                    "AL::usdmaya::fileio::translators::FrameRange": {
                         "bases": ["AL::usdmaya::fileio::translators::TranslatorBase"]
                     }
                 }
