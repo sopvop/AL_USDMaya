@@ -158,7 +158,11 @@ MObject TransformTranslator::createNode(const UsdPrim& from, MObject parent, con
 //----------------------------------------------------------------------------------------------------------------------
 MEulerRotation::RotationOrder convertRotationOrder(UsdGeomXformOp::Type type)
 {
-  switch (type) {
+  switch (type)
+  {
+  case UsdGeomXformOp::TypeRotateX:
+  case UsdGeomXformOp::TypeRotateY:
+  case UsdGeomXformOp::TypeRotateZ:
   case UsdGeomXformOp::TypeRotateXYZ:
     return MEulerRotation::kXYZ;
   case UsdGeomXformOp::TypeRotateXZY:
@@ -310,7 +314,6 @@ MStatus TransformTranslator::copyAttributes(const UsdPrim& from, MObject to, con
         else if(attr_type == utils::UsdDataType::kFloat)
         {
           MObject attr;
-
           const TfToken& opName = opClass.GetName();
           if (opName == UsdMayaXformStackTokens->rotate)
           {
