@@ -78,7 +78,7 @@ MStatus RendererManager::initialise()
     std::vector<int16_t> enumValues(numTokens, -1);
     for (size_t i = 0; i < numTokens; ++i)
     {
-      pluginNames[i] = imagingEngine.GetRendererPluginDesc(m_rendererPluginsTokens[i]);
+      pluginNames[i] = imagingEngine.GetRendererDisplayName(m_rendererPluginsTokens[i]);
       m_rendererPluginsNames[i] = MString(pluginNames[i].data(), pluginNames[i].size());
       enumNames[i] = pluginNames[i].data();
       enumValues[i] = i;
