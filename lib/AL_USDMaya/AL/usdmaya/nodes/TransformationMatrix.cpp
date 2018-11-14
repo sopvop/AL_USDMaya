@@ -904,6 +904,17 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
 
   if(m_flags & kAnyKnownSchema)
   {
+    // When checking if xformOp value is animated we check if GetNumSamples()
+    // is more than zero instead of one, because in USD varying attribute
+    // values with single sample is not the same as uniform value, and should be
+    // read an written differently.
+    //
+    // For uniform values GetNumSamples returns zero.
+    //
+    // Though caching single samples would be more efficient, such cases should be
+    // rare. And not caching makes code much simplier since it does not require
+    // dealing with such corner cases in various methods of this class.
+
     auto opIt = m_orderedOps.begin();
     for(std::vector<UsdGeomXformOp>::const_iterator it = m_xformops.begin(), e = m_xformops.end(); it != e; ++it, ++opIt)
     {
@@ -915,7 +926,7 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
       if (opName == UsdMayaXformStackTokens->translate)
       {
         m_flags |= kPrimHasTranslation;
-        if(op.GetNumTimeSamples() > 1)
+        if(op.GetNumTimeSamples() > 0)
         {
           m_flags |= kAnimatedTranslation;
         }
@@ -979,7 +990,7 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
       else if (opName == UsdMayaXformStackTokens->rotate)
       {
         m_flags |= kPrimHasRotation;
-        if(op.GetNumTimeSamples() > 1)
+        if(op.GetNumTimeSamples() > 0)
         {
           m_flags |= kAnimatedRotation;
         }
@@ -1041,7 +1052,7 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
       else if (opName == UsdMayaXformStackTokens->shear)
       {
         m_flags |= kPrimHasShear;
-        if(op.GetNumTimeSamples() > 1)
+        if(op.GetNumTimeSamples() > 0)
         {
           m_flags |= kAnimatedShear;
         }
@@ -1059,7 +1070,7 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
       else if (opName == UsdMayaXformStackTokens->scale)
       {
         m_flags |= kPrimHasScale;
-        if(op.GetNumTimeSamples() > 1)
+        if(op.GetNumTimeSamples() > 0)
         {
           m_flags |= kAnimatedScale;
         }
@@ -1079,7 +1090,7 @@ void TransformationMatrix::initialiseToPrim(bool readFromPrim, Transform* transf
         m_flags |= kPrimHasTransform;
         m_flags |= kFromMatrix;
         m_flags |= kPushPrimToMatrix;
-        if(op.GetNumTimeSamples() > 1)
+        if(op.GetNumTimeSamples() > 0)
         {
           m_flags |= kAnimatedMatrix;
         }
