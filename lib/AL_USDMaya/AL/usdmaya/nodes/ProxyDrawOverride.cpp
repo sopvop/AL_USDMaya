@@ -398,7 +398,16 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
       ptr->m_engine->RenderBatch(combined, params);
     }
 
-    ptr->m_engine->Render(ptr->m_rootPrim, ptr->m_params);
+    glPushAttrib(GL_COLOR_BUFFER_BIT);
+    glEnable(GL_BLEND);
+    glBlendColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glBlendEquation(GL_FUNC_ADD);
+    auto params = ptr->m_params;
+    params.applyRenderState = false;
+    params.alphaThreshold = 0.0f;
+    ptr->m_engine->Render(ptr->m_rootPrim, params);
+    glPopAttrib();
     
     // HACK: Maya doesn't restore this ONE buffer binding after our override is done so we have to do it for them.
     glBindBufferBase(GL_UNIFORM_BUFFER, 4, uboBinding);
