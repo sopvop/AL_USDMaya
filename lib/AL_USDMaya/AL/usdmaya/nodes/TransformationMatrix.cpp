@@ -1917,10 +1917,7 @@ void TransformationMatrix::pushToPrim()
     {
       if(pushPrimToMatrix())
       {
-        MMatrix m = MPxTransformationMatrix::asMatrix();
-        auto vtemp = (const void*)&m;
-        auto mtemp = (const GfMatrix4d*)vtemp;
-        op.Set(*mtemp, getTimeCode());
+        internal_pushMatrix(asMatrix(), op);
       }
     }
   }
@@ -2061,10 +2058,7 @@ void TransformationMatrix::enableReadAnimatedValues(bool enabled)
       {
         if(m_orderedOps[i].GetName() == UsdMayaXformStackTokens->transform)
         {
-          MMatrix m = MPxTransformationMatrix::asMatrix();
-          auto vtemp = (const void*)&m;
-          auto mtemp = (const GfMatrix4d*)vtemp;
-          m_xformops[i].Set(*mtemp, getTimeCode());
+          internal_pushMatrix(asMatrix(), m_xformops[i]);
           break;
         }
       }
@@ -2130,10 +2124,7 @@ void TransformationMatrix::enablePushToPrim(bool enabled)
       {
         if(m_orderedOps[i].GetName() == UsdMayaXformStackTokens->transform)
         {
-          MMatrix m = MPxTransformationMatrix::asMatrix();
-          auto vtemp = (const void*)&m;
-          auto mtemp = (const GfMatrix4d*)vtemp;
-          m_xformops[i].Set(*mtemp, getTimeCode());
+          internal_pushMatrix(asMatrix(), m_xformops[i]);
           break;
         }
       }
