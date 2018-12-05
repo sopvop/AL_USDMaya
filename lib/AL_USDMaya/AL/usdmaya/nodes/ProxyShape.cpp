@@ -239,6 +239,7 @@ MObject ProxyShape::m_transformScale = MObject::kNullObj;
 MObject ProxyShape::m_stageDataDirty = MObject::kNullObj;
 MObject ProxyShape::m_stageCacheId = MObject::kNullObj;
 MObject ProxyShape::m_assetResolverConfig = MObject::kNullObj;
+MObject ProxyShape::m_pauseUpdates = MObject::kNullObj;
 
 //----------------------------------------------------------------------------------------------------------------------
 std::vector<MObjectHandle> ProxyShape::m_unloadedProxyShapes;
@@ -714,9 +715,7 @@ ProxyShape::~ProxyShape()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::~ProxyShape\n");
   triggerEvent("PreDestroyProxyShape");
-  MNodeMessage::removeCallback(m_attributeChanged);
   MEventMessage::removeCallback(m_onSelectionChanged);
-  removeAttributeChangedCallback();
   TfNotice::Revoke(m_variantChangedNoticeKey);
   TfNotice::Revoke(m_objectsChangedNoticeKey);
   TfNotice::Revoke(m_editTargetChanged);
@@ -767,18 +766,19 @@ MStatus ProxyShape::initialise()
     m_sessionLayerName = addStringAttr("sessionLayerName", "sln", kCached|kReadable|kWritable|kStorable|kHidden);
 
     m_serializedArCtx = addStringAttr("serializedArCtx", "arcd", kCached|kReadable|kWritable|kStorable|kHidden);
-    m_filePath = addFilePathAttr("filePath", "fp", kCached | kReadable | kWritable | kStorable | kAffectsAppearance, kLoad, "USD Files (*.usd*) (*.usd*);;Alembic Files (*.abc)");
+    // m_filePath / m_primPath / m_excludePrimPaths are internal just so we get notification on change
+    m_filePath = addFilePathAttr("filePath", "fp", kCached | kReadable | kWritable | kStorable | kAffectsAppearance | kInternal, kLoad, "USD Files (*.usd*) (*.usd*);;Alembic Files (*.abc)");
 
-    m_primPath = addStringAttr("primPath", "pp", kCached | kReadable | kWritable | kStorable | kAffectsAppearance);
-    m_excludePrimPaths = addStringAttr("excludePrimPaths", "epp", kCached | kReadable | kWritable | kStorable | kAffectsAppearance);
+    m_primPath = addStringAttr("primPath", "pp", kCached | kReadable | kWritable | kStorable | kAffectsAppearance | kInternal);
+    m_excludePrimPaths = addStringAttr("excludePrimPaths", "epp", kCached | kReadable | kWritable | kStorable | kAffectsAppearance | kInternal);
     m_populationMaskIncludePaths = addStringAttr("populationMaskIncludePaths", "pmi", kCached | kReadable | kWritable | kStorable | kAffectsAppearance);
     m_excludedTranslatedGeometry = addStringAttr("excludedTranslatedGeometry", "etg", kCached | kReadable | kWritable | kStorable | kAffectsAppearance);
 
     m_complexity = addInt32Attr("complexity", "cplx", 0, kCached | kConnectable | kReadable | kWritable | kAffectsAppearance | kKeyable | kStorable);
     setMinMax(m_complexity, 0, 8, 0, 4);
     m_outStageData = addDataAttr("outStageData", "od", StageData::kTypeId, kConnectable | kReadable | kWritable | kAffectsAppearance);
-    m_displayGuides = addBoolAttr("displayGuides", "dg", false, kCached | kKeyable | kWritable | kAffectsAppearance | kStorable);
-    m_displayRenderGuides = addBoolAttr("displayRenderGuides", "drg", false, kCached | kKeyable | kWritable | kAffectsAppearance | kStorable);
+    m_displayGuides = addBoolAttr("displayGuides", "dg", false, kCached | kKeyable | kWritable | kAffectsAppearance | kStorable | kInternal);
+    m_displayRenderGuides = addBoolAttr("displayRenderGuides", "drg", false, kCached | kKeyable | kWritable | kAffectsAppearance | kStorable | kInternal);
     m_unloaded = addBoolAttr("unloaded", "ul", false, kCached | kKeyable | kWritable | kAffectsAppearance | kStorable);
     m_serializedTrCtx = addStringAttr("serializedTrCtx", "srtc", kReadable|kWritable|kStorable|kHidden);
 
@@ -812,6 +812,7 @@ MStatus ProxyShape::initialise()
     m_transformScale = nc.attribute("s");
 
     m_stageDataDirty = addBoolAttr("stageDataDirty", "sdd", false, kWritable | kAffectsAppearance | kInternal);
+    m_pauseUpdates = addBoolAttr("pauseUpdates", "pu", false, kReadable | kWritable | kConnectable | kAffectsAppearance | kInternal);
 
     m_stageCacheId = addInt32Attr("stageCacheId", "stcid", -1, kCached | kConnectable | kReadable  );
 
@@ -826,6 +827,7 @@ MStatus ProxyShape::initialise()
     AL_MAYA_CHECK_ERROR(attributeAffects(m_populationMaskIncludePaths, m_outStageData), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_stageDataDirty, m_outStageData), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_assetResolverConfig, m_outStageData), errorString);
+    AL_MAYA_CHECK_ERROR(attributeAffects(m_pauseUpdates, m_outStageData), errorString);
   }
   catch (const MStatus& status)
   {
@@ -1027,7 +1029,7 @@ void ProxyShape::serializeAll()
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdStageWeakPtr const& sender)
 {
-  if(MFileIO::isReadingFile())
+  if(m_ignoringUpdates || MFileIO::isReadingFile())
     return;
 
   if (!sender || sender != m_stage)
@@ -1172,7 +1174,7 @@ void ProxyShape::validateTransforms()
           newPrim.GetMetadata(Metadata::transformType, &transformType);
           if(newPrim && transformType.empty())
           {
-            tm->transform()->setPrim(newPrim, tm);
+            tm->setPrim(newPrim);
           }
         }
         else
@@ -1228,7 +1230,7 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
 // selection change happened.  If so, we trigger a ProxyShapePostLoadProcess() which will regenerate the alTransform
 // nodes based on the contents of the new variant selection.
 {
-  if(MFileIO::isReadingFile())
+  if(m_ignoringUpdates || MFileIO::isReadingFile())
   {
     return;
   }
@@ -1282,6 +1284,7 @@ void ProxyShape::loadStage()
     trackEditTargetLayer();
   }
   m_stage = UsdStageRefPtr();
+  clearBoundingBoxCache();
 
   // Get input attr values
   const MString file = inputStringValue(dataBlock, m_filePath);
@@ -1601,89 +1604,10 @@ void ProxyShape::constructLockPrims()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::onAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug& plug, MPlug&, void* clientData)
-{
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::onAttributeChanged\n");
-
-  const SdfPath rootPath(std::string("/"));
-  ProxyShape* proxy = (ProxyShape*)clientData;
-  if(msg & MNodeMessage::kAttributeSet)
-  {
-    // Delay stage creation if opening a file, because we haven't created the LayerManager node yet
-    if(plug == m_filePath || plug == m_assetResolverConfig)
-    {
-      if (MFileIO::isReadingFile())
-      {
-        m_unloadedProxyShapes.push_back(MObjectHandle(proxy->thisMObject()));
-      }
-      else
-      {
-        proxy->loadStage();
-      }
-    }
-    else
-    if(plug == m_primPath)
-    {
-      if(proxy->m_stage)
-      {
-        // Get the prim
-        // If no primPath string specified, then use the pseudo-root.
-        MString primPathStr = plug.asString();
-        if (primPathStr.length())
-        {
-          proxy->m_path = SdfPath(AL::maya::utils::convert(primPathStr));
-          UsdPrim prim = proxy->m_stage->GetPrimAtPath(proxy->m_path);
-          if(!prim)
-          {
-            proxy->m_path = rootPath;
-          }
-        }
-        else
-        {
-          proxy->m_path = rootPath;
-        }
-        proxy->constructGLImagingEngine();
-      }
-    }
-    else
-    if(plug == m_excludePrimPaths || plug == m_excludedTranslatedGeometry)
-    {
-      if(proxy->m_stage)
-      {
-        proxy->constructExcludedPrims();
-      }
-    }
-  }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::removeAttributeChangedCallback()
-{
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::removeAttributeChangedCallback\n");
-  if(m_attributeChanged != 0)
-  {
-    MMessage::removeCallback(m_attributeChanged);
-    m_attributeChanged = 0;
-  }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::addAttributeChangedCallback()
-{
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::addAttributeChangedCallback\n");
-  if(m_attributeChanged == 0)
-  {
-    MObject obj = thisMObject();
-    m_attributeChanged = MNodeMessage::addAttributeChangedCallback(obj, onAttributeChanged, (void*)this);
-  }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::postConstructor()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::postConstructor\n");
   setRenderable(true);
-  addAttributeChangedCallback();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1904,7 +1828,124 @@ MStatus ProxyShape::compute(const MPlug& plug, MDataBlock& dataBlock)
     }
     return status == MS::kSuccess ? computeOutStageData(plug, dataBlock) : status;
   }
+  else
+  if(plug == m_pauseUpdates)
+  {
+    return outputBoolValue(dataBlock, m_pauseUpdates, m_ignoringUpdates);
+  }
   return MPxSurfaceShape::compute(plug, dataBlock);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool ProxyShape::setInternalValue(const MPlug& plug, const MDataHandle& dataHandle)
+{
+  // We set the value in the datablock ourselves, so that the plug's value is
+  // can be queried from subfunctions (ie, loadStage, constructExcludedPrims, etc)
+  //
+  // If we simply returned "false", the "standard" implementation would set
+  // the datablock for us, but this would be too late for these subfunctions
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::setInternalValue %s\n", plug.name().asChar());
+
+  // Delay stage creation if opening a file, because we haven't created the LayerManager node yet
+  if(plug == m_filePath || plug == m_assetResolverConfig)
+  {
+    // TODO: make m_filePath updates respect m_ignoringUpdates
+
+    // can't use dataHandle.datablock(), as this is a temporary datahandle
+    MDataBlock datablock = forceCache();
+    AL_MAYA_CHECK_ERROR_RETURN_VAL(outputStringValue(datablock, m_filePath, dataHandle.asString()),
+        false, "ProxyShape::setInternalValue - error setting filePath");
+
+    if (MFileIO::isReadingFile())
+    {
+      m_unloadedProxyShapes.push_back(MObjectHandle(thisMObject()));
+    }
+    else
+    {
+      loadStage();
+    }
+    return true;
+  }
+  else
+  if(plug == m_primPath)
+  {
+    // TODO: make m_primPath updates respect m_ignoringUpdates
+    clearBoundingBoxCache();
+
+    // can't use dataHandle.datablock(), as this is a temporary datahandle
+    MDataBlock datablock = forceCache();
+    AL_MAYA_CHECK_ERROR_RETURN_VAL(outputStringValue(datablock, m_primPath, dataHandle.asString()),
+        false, "ProxyShape::setInternalValue - error setting primPath");
+
+    if(m_stage)
+    {
+      // Get the prim
+      // If no primPath string specified, then use the pseudo-root.
+      MString primPathStr = dataHandle.asString();
+      if (primPathStr.length())
+      {
+        m_path = SdfPath(AL::maya::utils::convert(primPathStr));
+        UsdPrim prim = m_stage->GetPrimAtPath(m_path);
+        if(!prim)
+        {
+          m_path = SdfPath::AbsoluteRootPath();
+        }
+      }
+      else
+      {
+        m_path = SdfPath::AbsoluteRootPath();
+      }
+      constructGLImagingEngine();
+    }
+    return true;
+  }
+  else
+  if(plug == m_excludePrimPaths || plug == m_excludedTranslatedGeometry)
+  {
+    clearBoundingBoxCache();
+
+    // can't use dataHandle.datablock(), as this is a temporary datahandle
+    MDataBlock datablock = forceCache();
+    AL_MAYA_CHECK_ERROR_RETURN_VAL(outputStringValue(datablock, plug.attribute(), dataHandle.asString()),
+        false, MString("ProxyShape::setInternalValue - error setting ") + plug.name());
+
+    if(m_stage)
+    {
+      constructExcludedPrims();
+    }
+  }
+  else
+  if(plug == m_pauseUpdates)
+  {
+    bool oldIgnoring = m_ignoringUpdates;
+    m_ignoringUpdates = dataHandle.asBool();
+    if(!m_ignoringUpdates && oldIgnoring)
+    {
+      // If we've turned off ignoring updates, we need to do a resync
+      resync(m_path);
+    }
+    return true;
+  }
+  else
+  if(plug == m_displayGuides || plug == m_displayRenderGuides)
+  {
+    clearBoundingBoxCache();
+    // clearBoundingBoxCache doesn't read any plugs, so we can just return
+    // false, and rely on "normal" plug-setting behavior
+    return false;
+  }
+  return false;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool ProxyShape::getInternalValue(const MPlug& plug, MDataHandle& dataHandle)
+{
+  if(plug == m_pauseUpdates)
+  {
+    dataHandle.set(m_ignoringUpdates);
+    return true;
+  }
+  return false;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1930,16 +1971,20 @@ MBoundingBox ProxyShape::boundingBox() const
   // If we could cheaply determine whether a stage only has static geometry,
   // we could make this value a constant one for that case, avoiding the
   // memory overhead of a cache entry per frame
-  UsdTimeCode currTime = UsdTimeCode(inputDoubleValue(dataBlock, m_outTime));
+  UsdTimeCode currTime = UsdTimeCode(inputTimeValue(dataBlock, m_outTime).value());
 
   // RB: There must be a nicer way of doing this that avoids the map?
   // The time codes are likely to be ranged, so an ordered array + binary search would surely work?
   std::map<UsdTimeCode, MBoundingBox>::const_iterator cacheLookup = m_boundingBoxCache.find(currTime);
   if (cacheLookup != m_boundingBoxCache.end())
   {
+    TF_DEBUG(ALUSDMAYA_EVALUATION_BBOX).Msg("Using cached bounding box: time %f\n",
+        currTime.GetValue());
     return cacheLookup->second;
   }
 
+  TF_DEBUG(ALUSDMAYA_EVALUATION_BBOX).Msg("Using re-calculated bounding box: time %f\n",
+      currTime.GetValue());
   GfBBox3d allBox;
   UsdPrim prim = getUsdPrim(dataBlock);
   if (prim)

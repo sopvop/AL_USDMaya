@@ -24,6 +24,7 @@
 #include "AL/event/EventHandler.h"
 #include "AL/maya/event/MayaEventManager.h"
 #include <AL/usdmaya/SelectabilityDB.h>
+#include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/DrivenTransformsData.h"
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
@@ -380,6 +381,9 @@ public:
   /// A place to put a custom assetResolver Config string that's passed to the Resolver Context when stage is opened
   AL_DECL_ATTRIBUTE(assetResolverConfig);
 
+  /// Don't update the proxy shape when updates to the usd stage are made
+  AL_DECL_ATTRIBUTE(pauseUpdates);
+
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   Output Attributes
   //--------------------------------------------------------------------------------------------------------------------
@@ -417,6 +421,12 @@ public:
   /// \brief  compute bounds
   AL_USDMAYA_PUBLIC
   MBoundingBox boundingBox() const override;
+
+  inline void clearBoundingBoxCache()
+  {
+    TF_DEBUG(ALUSDMAYA_EVALUATION_BBOX).Msg("Clearing bounding box cache\n");
+    m_boundingBoxCache.clear();
+  }
 
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   AL_usdmaya_Transform utils
@@ -757,12 +767,23 @@ public:
   AL_USDMAYA_PUBLIC
   void resync(const SdfPath& primPath);
 
+  /// \brief Whether the proxy shape is currently listening to changes made to the usd stage
+  ///        Note that, because the proxy shape uses hydra for display purposes, which is connected to
+  ///        the underlying stage a a low level independent of this node, if ignoringUpdates / pauseUpdates
+  ///        are true, this does NOT mean that the displayed proxy shape will never reflect changes to the
+  ///        usd stage; rather, it just means that certain event listeners for the proxyShape are disabled.
+  ///        For instance, loading of ALMayaReference loads won't happen, nor will creation / destruction of
+  ///        transforms, etc.
+  inline bool ignoringUpdates()
+  {
+    return m_ignoringUpdates;
+  }
 
-  // \brief Serialize information unique to this shape
+  /// \brief Serialize information unique to this shape
   AL_USDMAYA_PUBLIC
   void serialize(UsdStageRefPtr stage, LayerManager* layerManager);
 
-  // \brief Serialize all layers in proxyShapes to layerManager attributes; called before saving
+  /// \brief Serialize all layers in proxyShapes to layerManager attributes; called before saving
   AL_USDMAYA_PUBLIC
   static void serializeAll();
 
@@ -770,6 +791,9 @@ public:
   {
     return m_unloadedProxyShapes;
   }
+
+  AL_USDMAYA_PUBLIC
+  static void loadUnloadedProxyShapes();
 
   /// \brief This function starts the prim changed process within the proxyshape
   /// \param[in] changePath is point at which the scene is going to be modified.
@@ -815,14 +839,6 @@ public:
   /// \brief  used to reload the stage after file open
   AL_USDMAYA_PUBLIC
   void loadStage();
-
-  /// \brief  adds the attribute changed callback to the proxy shape
-  AL_USDMAYA_PUBLIC
-  void addAttributeChangedCallback();
-
-  /// \brief  removes the attribute changed callback from the proxy shape
-  AL_USDMAYA_PUBLIC
-  void removeAttributeChangedCallback();
 
   AL_USDMAYA_PUBLIC
   void constructLockPrims();
@@ -981,6 +997,8 @@ private:
 
   void postConstructor() override;
   MStatus compute(const MPlug& plug, MDataBlock& dataBlock) override;
+  bool setInternalValue(const MPlug& plug, const MDataHandle& dataHandle) override;
+  bool getInternalValue(const MPlug& plug, MDataHandle& dataHandle) override;
   MStatus setDependentsDirty(const MPlug& plugBeingDirtied, MPlugArray& plugs) override;
   bool isBounded() const override;
   #if MAYA_API_VERSION < 201700
@@ -1054,8 +1072,6 @@ private:
   TfNotice::Key m_editTargetChanged;
 
   mutable std::map<UsdTimeCode, MBoundingBox> m_boundingBoxCache;
-  AL::event::CallbackId m_beforeSaveSceneId = -1;
-  MCallbackId m_attributeChanged = 0;
   MCallbackId m_onSelectionChanged = 0;
   SdfPathVector m_excludedGeometry;
   SdfPathVector m_excludedTaggedGeometry;
@@ -1079,6 +1095,7 @@ private:
   bool m_drivenTransformsDirty = false;
   bool m_pleaseIgnoreSelection = false;
   bool m_hasChangedSelection = false;
+  bool m_ignoringUpdates = false;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
