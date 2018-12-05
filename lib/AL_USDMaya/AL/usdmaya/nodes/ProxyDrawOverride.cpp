@@ -740,7 +740,7 @@ bool ProxyDrawOverride::userSelect(
     if (ArchHasEnv("MAYA_WANT_UFE_SELECTION"))
     {
       // Get the Hierarchy Handler of USD - Id = 2
-      auto handler{ Ufe::RunTimeMgr::instance().hierarchyHandler(2) };
+      auto handler = Ufe::RunTimeMgr::instance().hierarchyHandler(2);
       if (handler == nullptr)
       {
         MGlobal::displayError("USD Hierarchy handler has not been loaded - Picking is not possible");

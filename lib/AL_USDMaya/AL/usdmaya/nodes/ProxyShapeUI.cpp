@@ -584,7 +584,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
     }
 #if defined(WANT_UFE_BUILD)
     if (ArchHasEnv("MAYA_WANT_UFE_SELECTION")) {
-        auto handler{ Ufe::RunTimeMgr::instance().hierarchyHandler(USD_UFE_RUNTIME_ID) };
+        auto handler = Ufe::RunTimeMgr::instance().hierarchyHandler(USD_UFE_RUNTIME_ID);
         if (handler == nullptr) {
             MGlobal::displayError("USD Hierarchy handler has not been loaded - Picking is not possible");
             return false;
