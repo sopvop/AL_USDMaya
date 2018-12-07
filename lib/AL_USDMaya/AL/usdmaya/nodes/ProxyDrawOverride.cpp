@@ -59,9 +59,9 @@ public:
   ~RenderUserData()
     {}
 
-  UsdImagingGLEngine::RenderParams m_params;
+  UsdImagingGLRenderParams m_params;
   UsdPrim m_rootPrim;
-  UsdImagingGLHdEngine* m_engine = 0;
+  UsdImagingGLEngine* m_engine = 0;
   ProxyShape* m_shape = 0;
   MDagPath m_objPath;
 };
@@ -399,8 +399,8 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
     ptr->m_params.frame = ptr->m_shape->outTimePlug().asMTime().as(MTime::uiUnit());
     if(combined.size())
     {
-      UsdImagingGLEngine::RenderParams params = ptr->m_params;
-      params.drawMode = UsdImagingGLEngine::DRAW_WIREFRAME;
+      UsdImagingGLRenderParams params = ptr->m_params;
+      params.drawMode = UsdImagingGLDrawMode::DRAW_WIREFRAME;
       MColor colour = M3dView::leadColor();
       params.wireframeColor = GfVec4f(colour.r, colour.g, colour.b, 1.0f);
       glDepthFunc(GL_LEQUAL);
