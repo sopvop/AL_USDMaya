@@ -59,7 +59,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class UsdImagingGLEngine;
+class Engine;
 
 // Note: you MUST forward declare LayerManager, and not include LayerManager.h;
 // The reason is that LayerManager.h includes MPxLocatorNode.h, which on Linux,
@@ -407,8 +407,8 @@ public:
     { return m_stage; }
 
   /// \brief  gets hold of the attributes on this node that control the rendering in some way
-  /// \param  attribs the returned set of render attributes (should be of type: UsdImagingGLEngine::RenderParams*. Hiding
-  ///         this behind a void pointer to prevent UsdImagingGLEngine leaking into the translator plugin dependencies)
+  /// \param  attribs the returned set of render attributes (should be of type: Engine::RenderParams*. Hiding
+  ///         this behind a void pointer to prevent Engine leaking into the translator plugin dependencies)
   /// \param  frameContext the frame context for rendering
   /// \param  dagPath the dag path of the node being rendered
   /// \return true if the attribs could be retrieved (i.e. is the stage is valid)
@@ -697,7 +697,7 @@ public:
 
   /// \brief  returns the usd imaging engine for this proxy shape
   /// \return the imagine engin instance for this shape (shared between draw override and shape ui)
-  inline UsdImagingGLEngine* engine() const
+  inline Engine* engine() const
     { return m_engine; }
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -1072,7 +1072,7 @@ private:
   SdfPath m_changedPath;
   SdfPathVector m_variantSwitchedPrims;
   SdfLayerHandle m_prevEditTarget;
-  UsdImagingGLEngine* m_engine = 0;
+  Engine* m_engine = 0;
 
   uint32_t m_engineRefCount = 0;
   bool m_compositionHasChanged = false;
