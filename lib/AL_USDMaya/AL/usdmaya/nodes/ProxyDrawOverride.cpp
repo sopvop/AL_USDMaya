@@ -542,7 +542,7 @@ bool ProxyDrawOverride::userSelect(
   MMatrix invMatrix = objPath.inclusiveMatrixInverse();
   GfMatrix4d worldToLocalSpace(invMatrix.matrix);
 
-  Engine::RenderParams params;
+  UsdImagingGLRenderParams params;
 
   auto* proxyShape = static_cast<ProxyShape*>(getShape(objPath));
   auto engine = proxyShape->engine();
