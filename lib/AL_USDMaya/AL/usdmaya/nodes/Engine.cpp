@@ -22,69 +22,75 @@ namespace AL {
 namespace usdmaya {
 namespace nodes {
 
-Engine::Engine(const SdfPath& rootPath,
-       const SdfPathVector& excludedPaths) : UsdImagingGLEngine(rootPath, excludedPaths) {}
+Engine::Engine(const SdfPath& rootPath, const SdfPathVector& excludedPaths)
+  : UsdImagingGLEngine(rootPath, excludedPaths) {}
 
 bool Engine::TestIntersectionBatch(
-    const GfMatrix4d &viewMatrix,
-    const GfMatrix4d &projectionMatrix,
-    const GfMatrix4d &worldToLocalSpace,
-    const SdfPathVector& paths,
-    UsdImagingGLRenderParams params,
-    unsigned int pickResolution,
-    PathTranslatorCallback pathTranslator,
-    HitBatch *outHit) {
-    _UpdateHydraCollection(&_intersectCollection, paths, params, &_renderTags);
+  const GfMatrix4d &viewMatrix,
+  const GfMatrix4d &projectionMatrix,
+  const GfMatrix4d &worldToLocalSpace,
+  const SdfPathVector& paths,
+  UsdImagingGLRenderParams params,
+  unsigned int pickResolution,
+  PathTranslatorCallback pathTranslator,
+  HitBatch *outHit) {
+  _UpdateHydraCollection(&_intersectCollection, paths, params, &_renderTags);
 
-    static const HdCullStyle USD_2_HD_CULL_STYLE[] =
-        {
-            HdCullStyleDontCare,              // No opinion, unused
-            HdCullStyleNothing,               // CULL_STYLE_NOTHING,
-            HdCullStyleBack,                  // CULL_STYLE_BACK,
-            HdCullStyleFront,                 // CULL_STYLE_FRONT,
-            HdCullStyleBackUnlessDoubleSided, // CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED
-        };
-    static_assert(((sizeof(USD_2_HD_CULL_STYLE) /
-                    sizeof(USD_2_HD_CULL_STYLE[0]))
-                   == static_cast<int>(UsdImagingGLCullStyle::CULL_STYLE_COUNT)),"enum size mismatch");
+  HdxIntersector::HitVector allHits;
+  HdxIntersector::Params qparams;
+  qparams.viewMatrix = worldToLocalSpace * viewMatrix;
+  qparams.projectionMatrix = projectionMatrix;
+  qparams.alphaThreshold = params.alphaThreshold;
+  switch (params.cullStyle) {
+    case UsdImagingGLCullStyle::CULL_STYLE_NO_OPINION:
+      qparams.cullStyle = HdCullStyleDontCare;
+      break;
+    case UsdImagingGLCullStyle::CULL_STYLE_NOTHING:
+      qparams.cullStyle = HdCullStyleNothing;
+      break;
+    case UsdImagingGLCullStyle::CULL_STYLE_BACK:
+      qparams.cullStyle = HdCullStyleBack;
+      break;
+    case UsdImagingGLCullStyle::CULL_STYLE_FRONT:
+      qparams.cullStyle = HdCullStyleFront;
+      break;
+    case UsdImagingGLCullStyle::CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED:
+      qparams.cullStyle = HdCullStyleBackUnlessDoubleSided;
+      break;
+    default:
+      qparams.cullStyle = HdCullStyleDontCare;
+  }
+  qparams.renderTags = _renderTags;
+  qparams.enableSceneMaterials = params.enableSceneMaterials;
 
-    HdxIntersector::HitVector allHits;
-    HdxIntersector::Params qparams;
-    qparams.viewMatrix = worldToLocalSpace * viewMatrix;
-    qparams.projectionMatrix = projectionMatrix;
-    qparams.alphaThreshold = params.alphaThreshold;
-    qparams.cullStyle = USD_2_HD_CULL_STYLE[static_cast<int>(params.cullStyle)];
-    qparams.renderTags = _renderTags;
-    qparams.enableSceneMaterials = params.enableSceneMaterials;
+  _taskController->SetPickResolution(pickResolution);
+  if (!_taskController->TestIntersection(
+      &_engine,
+      _intersectCollection,
+      qparams,
+      HdxIntersectionModeTokens->unique,
+      &allHits)) {
+    return false;
+  }
 
-    _taskController->SetPickResolution(pickResolution);
-    if (!_taskController->TestIntersection(
-        &_engine,
-        _intersectCollection,
-        qparams,
-        HdxIntersectionModeTokens->unique,
-        &allHits)) {
-        return false;
-    }
-
-    if (!outHit) {
-        return true;
-    }
-
-    for (const HdxIntersector::Hit& hit : allHits) {
-        const SdfPath primPath = hit.objectId;
-        const SdfPath instancerPath = hit.instancerId;
-        const int instanceIndex = hit.instanceIndex;
-
-        HitInfo& info = (*outHit)[pathTranslator(primPath, instancerPath,
-                                                 instanceIndex)];
-        info.worldSpaceHitPoint = GfVec3d(hit.worldSpaceHitPoint[0],
-                                          hit.worldSpaceHitPoint[1],
-                                          hit.worldSpaceHitPoint[2]);
-        info.hitInstanceIndex = instanceIndex;
-    }
-
+  if (!outHit) {
     return true;
+  }
+
+  for (const auto& hit : allHits) {
+    const SdfPath primPath = hit.objectId;
+    const SdfPath instancerPath = hit.instancerId;
+    const int instanceIndex = hit.instanceIndex;
+
+    HitInfo& info = (*outHit)[pathTranslator(primPath, instancerPath,
+                                             instanceIndex)];
+    info.worldSpaceHitPoint = GfVec3d(hit.worldSpaceHitPoint[0],
+                                      hit.worldSpaceHitPoint[1],
+                                      hit.worldSpaceHitPoint[2]);
+    info.hitInstanceIndex = instanceIndex;
+  }
+
+  return true;
 }
 
 }
