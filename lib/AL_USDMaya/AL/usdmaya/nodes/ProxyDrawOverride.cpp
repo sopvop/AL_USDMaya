@@ -430,8 +430,8 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
         }
         if (!ufePaths.empty())
         {
-            UsdImagingGLEngine::RenderParams params = ptr->m_params;
-            params.drawMode = UsdImagingGLEngine::DRAW_WIREFRAME;
+            UsdImagingGLRenderParams params = ptr->m_params;
+            params.drawMode = UsdImagingGLDrawMode::DRAW_WIREFRAME;
             MColor colour = M3dView::leadColor();	// Maya selection color
             params.wireframeColor = GfVec4f(colour.r, colour.g, colour.b, 1.0f);
             glDepthFunc(GL_LEQUAL);
