@@ -19,6 +19,7 @@
 #include "AL/usdmaya/utils/Utils.h"
 #include "AL/usd/utils/DebugCodes.h"
 #include "pxr/usd/usdGeom/tokens.h"
+#include "pxr/usd/usdUtils/pipeline.h"
 
 #include "maya/MItMeshPolygon.h"
 #include "maya/MGlobal.h"
@@ -2078,6 +2079,38 @@ void MeshExportContext::copyVertexData(UsdTimeCode time)
   }
 }
 
+void MeshExportContext::copyBindPoseData(UsdTimeCode time)
+{
+  if(diffGeom & kPoints)
+  {
+
+    UsdGeomPrimvar pRefPrimVarAttr = mesh.CreatePrimvar(
+            UsdUtilsGetPrefName(),
+            SdfValueTypeNames->Point3fArray,
+            UsdGeomTokens->varying);
+
+    if(pRefPrimVarAttr)
+    {
+      MStatus status;
+      const uint32_t numVertices = fnMesh.numVertices();
+      VtArray<GfVec3f> points(numVertices);
+      const float* pointsData = fnMesh.getRawPoints(&status);
+      if(status)
+      {
+        memcpy((GfVec3f*)points.data(), pointsData, sizeof(float) * 3 * numVertices);
+
+        pRefPrimVarAttr.Set(points, time);
+      }
+      else
+      {
+        MGlobal::displayError(MString("Unable to access mesh vertices on mesh: ") + fnMesh.fullPathName());
+      }
+    }
+  }
+}
+
+
+
 //----------------------------------------------------------------------------------------------------------------------
 void MeshExportContext::copyNormalData(UsdTimeCode time)
 {
@@ -2105,9 +2138,6 @@ void MeshExportContext::copyNormalData(UsdTimeCode time)
           mesh.SetNormalsInterpolation(UsdGeomTokens->faceVarying);
           memcpy((GfVec3f*)normals.data(), normalsData, sizeof(float) * 3 * numNormals);
           normalsAttr.Set(normals, time);
-
-          // Also set the normal interpolation, so that there won't be tons of mismatch warnings during playback:
-          normalsAttr.SetMetadata (UsdGeomTokens->interpolation, UsdGeomTokens->vertex);
         }
       }
       else
