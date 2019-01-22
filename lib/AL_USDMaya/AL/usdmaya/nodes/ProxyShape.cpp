@@ -1171,7 +1171,7 @@ void ProxyShape::validateTransforms()
           newPrim.GetMetadata(Metadata::transformType, &transformType);
           if(newPrim && transformType.empty())
           {
-            tm->transform()->setPrim(newPrim, tm);
+            tm->setPrim(newPrim);
           }
         }
         else
