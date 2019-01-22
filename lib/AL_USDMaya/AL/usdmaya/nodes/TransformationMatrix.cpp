@@ -1922,9 +1922,8 @@ void TransformationMatrix::pushToPrim()
     }
   }
 
-
   // Anytime we update the xform, we need to tell the proxy shape that it
-  // needs to redraw itself
+  // needs to update it's bounding box cache and redraw itself
   if (!m_transformNode.isNull())
   {
     MStatus status;
@@ -1946,6 +1945,8 @@ void TransformationMatrix::pushToPrim()
           m_xform.GetLocalTransformation(&newMatrix, &newResetsStack, getTimeCode());
           if (newMatrix != oldMatrix || newResetsStack != oldResetsStack)
           {
+            ProxyShape* proxy = static_cast<ProxyShape*>(proxyMfn.userNode());
+            proxy->clearBoundingBoxCache();
             MHWRender::MRenderer::setGeometryDrawDirty(proxyObj);
           }
         }
