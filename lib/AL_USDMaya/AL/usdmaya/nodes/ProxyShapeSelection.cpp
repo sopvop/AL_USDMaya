@@ -617,6 +617,10 @@ MObject ProxyShape::makeUsdTransformChain(
     // set the primitive path
     modifier.newPlugValueString(ptrNode->primPathPlug(), path.GetText());
   }
+  MDagPath mayaPath;
+  fn.getPath(mayaPath);
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("Transform exists: %d\n", node.isNull());
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("Transform created: %s\n", mayaPath.fullPathName().asChar());
   TransformReference ref(node, reason);
   ref.checkIncRef(reason);
   m_requiredPaths.emplace(path, ref);
@@ -1055,7 +1059,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
         bool alreadySelected = m_selectedPaths.count(path) > 0;
 
         auto prim = stage->GetPrimAtPath(path);
-        if(prim)
+        if(prim && !prim.IsPseudoRoot())
         {
           if(!alreadySelected)
             insertPrims.push_back(prim);
@@ -1118,7 +1122,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
         if(!alreadySelected)
         {
           auto prim = stage->GetPrimAtPath(path);
-          if(prim)
+          if(prim && !prim.IsPseudoRoot())
           {
             prims.push_back(prim);
           }
