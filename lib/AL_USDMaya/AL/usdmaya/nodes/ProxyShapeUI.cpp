@@ -585,13 +585,13 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
     }
 #if defined(WANT_UFE_BUILD)
     if (ArchHasEnv("MAYA_WANT_UFE_SELECTION")) {
-        auto handler{ Ufe::RunTimeMgr::instance().hierarchyHandler(USD_UFE_RUNTIME_ID) };
+        auto handler = Ufe::RunTimeMgr::instance().hierarchyHandler(USD_UFE_RUNTIME_ID);
         if (handler == nullptr) {
             MGlobal::displayError("USD Hierarchy handler has not been loaded - Picking is not possible");
             return false;
         }
 
-        Ufe::Selection dstSelection; // Only used for kReplaceList
+        Ufe::Selection dstSelection; // Only used for kReplaceList or kAddToHeadOfList
                                      // Get the paths
         if (paths.size())
         {
@@ -608,6 +608,9 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
                 switch (mode)
                 {
                 case MGlobal::kReplaceList:
+                // TODO: improve if Ufe::Selection ever gets some form of prepend or
+                // insert method. For now, we have to create a new list, then replace.
+                case MGlobal::kAddToHeadOfList:
                 {
                     // Add the sceneItem to dstSelection
                     dstSelection.append(si);
@@ -638,6 +641,19 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
             if (mode == MGlobal::kReplaceList) {
                 // Add to Global selection
                 Ufe::GlobalSelection::get()->replaceWith(dstSelection);
+            }
+            // TODO: improve if Ufe::Selection ever gets some form of prepend or
+            // insert method. For now, we have to create a new list, then replace.
+            else if (mode == MGlobal::kAddToHeadOfList)
+            {
+                auto globalSelection = Ufe::GlobalSelection::get();
+                // Add all the old items after the new items
+                for (auto& oldItem : *globalSelection)
+                {
+                    dstSelection.append(oldItem);
+                }
+                // Add to Global selection
+                globalSelection->replaceWith(dstSelection);
             }
         }
     }

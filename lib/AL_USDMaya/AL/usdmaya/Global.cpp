@@ -314,7 +314,6 @@ static void onFileNew(void*)
 static void preFileRead(void*)
 {
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("preFileRead\n");
-
   if(!readDepth)
   {
     Global::openingFile(true);
