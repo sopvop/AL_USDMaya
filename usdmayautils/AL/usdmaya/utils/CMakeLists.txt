@@ -71,6 +71,8 @@ install( FILES ${usdmaya_utils_headers}
 
 # install the library
 install(TARGETS ${USDMAYA_UTILS_LIBRARY_NAME}
+    ARCHIVE
+    DESTINATION ${MAYA_UTILS_LIBRARY_LOCATION}
     LIBRARY
     DESTINATION ${MAYA_UTILS_LIBRARY_LOCATION}
     RUNTIME
