@@ -63,16 +63,16 @@ struct TranslatorParameters
     { return m_forcePrimImport; }
 
   /// \brief  should pushToPrim be enabled on created transforms
-  inline void setPushToPrim(bool value) 
+  inline void setPushToPrim(bool value)
     { m_pushToPrim = value; }
 
   /// \brief  should pushToPrim be enabled on created transforms
-  inline bool pushToPrim() const 
+  inline bool pushToPrim() const
     { return m_pushToPrim; }
 
 private:
   bool m_forcePrimImport = false;
-  bool m_pushToPrim = true;
+  bool m_pushToPrim = false;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
