@@ -37,6 +37,7 @@
 #include "AL/maya/utils/Utils.h"
 
 #include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/ar/resolver.h>
 
 
 namespace {
@@ -163,14 +164,20 @@ MStatus MayaReferenceLogic::update(const UsdPrim& prim, MObject parent) const
   SdfAssetPath mayaReferenceAssetPath;
   // Check to see if we have a valid Maya reference attribute
   UsdAttribute mayaReferenceAttribute = prim.GetAttribute(m_referenceName);
-  mayaReferenceAttribute.Get(&mayaReferenceAssetPath);
-  MString mayaReferencePath(mayaReferenceAssetPath.GetResolvedPath().c_str());
-
-  // The resolved path is empty if the maya reference is a full path.
-  if(!mayaReferencePath.length())
-  {
-    mayaReferencePath = mayaReferenceAssetPath.GetAssetPath().c_str();
+  if (!mayaReferenceAttribute.Get(&mayaReferenceAssetPath)) {
+      return MS::kFailure;
   }
+  std::string assetPath = mayaReferenceAssetPath.GetResolvedPath();
+  if (!assetPath.empty()) {
+      ArGetResolver().OpenAsset(assetPath); //Force download
+  } else {
+      assetPath = mayaReferenceAssetPath.GetAssetPath();
+  }
+
+  std::replace(assetPath.begin(), assetPath.end(), '\\', '/');
+
+  MString mayaReferencePath;
+  mayaReferencePath.setUTF8(assetPath.c_str());
 
   // If the path is still empty return, there is no reference to import
   if(!mayaReferencePath.length())
@@ -427,7 +434,7 @@ MStatus MayaReferenceLogic::UnloadMayaReference(MObject& parent) const
     {
       MPlugArray referencePlugs;
       messagePlug.connectedTo(referencePlugs, false, true);
-      
+
       // Unload the connected references.
       for(uint32_t i = 0; i < referencePlugs.length(); ++i)
       {
