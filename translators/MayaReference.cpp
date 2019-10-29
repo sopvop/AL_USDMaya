@@ -27,6 +27,7 @@
 #include "maya/MFnCamera.h"
 #include "maya/MFileIO.h"
 #include "maya/MItDependencyNodes.h"
+#include "maya/MPxFileResolver.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
 #include "AL/usdmaya/utils/DgNodeHelper.h"
@@ -157,6 +158,36 @@ MStatus MayaReference::update(const UsdPrim& prim)
   return m_mayaReferenceLogic.update(prim, parent);
 }
 
+MString resolveReference(SdfAssetPath const &mayaReferenceAssetPath)
+{
+  std::string assetPath = mayaReferenceAssetPath.GetAssetPath();
+
+  // Check if asset can be resolved by any registered MPxMayaResolver
+  // and if so, then leave it as is and let maya handle resolving
+  MString mayaReferencePath;
+  mayaReferencePath.setUTF8(assetPath.c_str());
+
+  MURI assetUrl(mayaReferencePath);
+  if (assetUrl.isValid()
+      && MPxFileResolver::findURIResolverByScheme(assetUrl.getScheme()))
+  {
+    return mayaReferencePath;
+  }
+
+  std::string resolvedPath = mayaReferenceAssetPath.GetResolvedPath();
+  if (!resolvedPath.empty()) {
+    ArGetResolver().OpenAsset(assetPath); //Force download
+  } else {
+    resolvedPath = mayaReferenceAssetPath.GetAssetPath();
+  }
+  // On windows resolver can return path with forward slash
+  // and maya doesn't like that
+  std::replace(resolvedPath.begin(), resolvedPath.end(), '\\', '/');
+
+  mayaReferencePath.setUTF8(resolvedPath.c_str());
+  return mayaReferencePath;
+}
+
 //----------------------------------------------------------------------------------------------------------------------
 MStatus MayaReferenceLogic::update(const UsdPrim& prim, MObject parent) const
 {
@@ -167,18 +198,8 @@ MStatus MayaReferenceLogic::update(const UsdPrim& prim, MObject parent) const
   if (!mayaReferenceAttribute.Get(&mayaReferenceAssetPath)) {
       return MS::kFailure;
   }
-  std::string assetPath = mayaReferenceAssetPath.GetResolvedPath();
-  if (!assetPath.empty()) {
-      ArGetResolver().OpenAsset(assetPath); //Force download
-  } else {
-      assetPath = mayaReferenceAssetPath.GetAssetPath();
-  }
 
-  std::replace(assetPath.begin(), assetPath.end(), '\\', '/');
-
-  MString mayaReferencePath;
-  mayaReferencePath.setUTF8(assetPath.c_str());
-
+  MString mayaReferencePath = resolveReference(mayaReferenceAssetPath);
   // If the path is still empty return, there is no reference to import
   if(!mayaReferencePath.length())
   {
